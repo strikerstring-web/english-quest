@@ -111,7 +111,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                       titleEn: 'Beginner 3: Want Speaking Practice',
                       titleMl: 'ലെവൽ 3: സംസാരിക്കാൻ മടി (Need Fluency)',
                       desc: isMl ? 'ഇംഗ്ലീഷ് വായിക്കാൻ അറിയാം, സംസാരിക്കാൻ പേടി' : 'Can read English, need confidence to speak'
-                    }
+                    },
                     {
                       id: 'Intermediate' as UserLevel,
                       titleEn: 'Intermediate: Build confidence',
