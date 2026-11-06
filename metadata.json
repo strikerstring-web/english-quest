@@ -1,0 +1,6 @@
+{
+  "name": "ENGLISH QUEST - English for Malayalam Beginners",
+  "description": "Interactive gamified English learning app for Malayalam speakers featuring AI speaking arena, writing studio, grammar games, vocabulary challenges, and structured quest path.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
