@@ -53,7 +53,8 @@ export const VocabularyGame: React.FC<VocabularyGameProps> = ({
   // Spelling game state
   const [spellingInput, setSpellingInput] = useState<string[]>([]);
 
-  const currentWord = availableVocabulary[currentWordIndex % availableVocabulary.length];
+  const safeVocabulary = availableVocabulary.length ? availableVocabulary : VOCABULARY_LIST;
+  const currentWord = safeVocabulary[currentWordIndex % safeVocabulary.length];
 
   // Options for Meaning Quiz
   const quizOptions = useMemo(() => {
@@ -79,9 +80,11 @@ export const VocabularyGame: React.FC<VocabularyGameProps> = ({
 
   // 4 words for Match Tiles
   const matchBatch = useMemo(() => {
-    const start = (currentWordIndex * 4) % (availableVocabulary.length - 4);
-    return availableVocabulary.slice(start, start + 4);
-  }, [currentWordIndex]);
+    const list = safeVocabulary;
+    const batchSize = Math.min(4, list.length);
+    const start = (currentWordIndex * 4) % list.length;
+    return Array.from({ length: batchSize }, (_, offset) => list[(start + offset) % list.length]);
+  }, [currentWordIndex, safeVocabulary]);
 
   const matchEnglishWords = useMemo(() => {
     return [...matchBatch].sort(() => 0.5 - Math.random());
@@ -127,6 +130,7 @@ export const VocabularyGame: React.FC<VocabularyGameProps> = ({
       onUpdateProgress((prev) => {
         const isNewWord = !prev.wordsLearned.includes(currentWord.id);
         const newLearned = isNewWord ? [...prev.wordsLearned, currentWord.id] : prev.wordsLearned;
+        if (!isNewWord) return prev;
         const newXp = prev.xp + 10;
         const newLevel = Math.floor(newXp / 100) + 1;
         return {
@@ -170,12 +174,11 @@ export const VocabularyGame: React.FC<VocabularyGameProps> = ({
       setMatchSelectedMl(null);
       triggerRewardEffect(false);
 
-      onUpdateProgress((prev) => ({
-        ...prev,
-        xp: prev.xp + 15,
-        coins: prev.coins + 3,
-        wordsLearned: Array.from(new Set([...prev.wordsLearned, enId]))
-      }));
+      onUpdateProgress((prev) => {
+        if (prev.wordsLearned.includes(enId)) return prev;
+        const newXp = prev.xp + 15;
+        return { ...prev, xp: newXp, level: Math.floor(newXp / 100) + 1, coins: prev.coins + 3, wordsLearned: [...prev.wordsLearned, enId] };
+      });
 
       if (newMatches.length >= 4) {
         // Complete batch
@@ -202,7 +205,7 @@ export const VocabularyGame: React.FC<VocabularyGameProps> = ({
         w.malayalam.includes(searchQuery);
       return matchCat && matchText;
     });
-  }, [searchQuery, selectedCategory]);
+  }, [searchQuery, selectedCategory, availableVocabulary]);
 
   return (
     <div className="space-y-6 pb-12 animate-fade-in">
