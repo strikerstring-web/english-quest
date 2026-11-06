@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { UserProgress, VocabItem } from '../types';
 import { VOCABULARY_LIST } from '../data/vocabulary';
+import { LEVEL_VOCABULARY_LIST } from '../data/levelVocabulary';
 import { speakText } from '../utils/speech';
 import { triggerRewardEffect } from '../utils/storage';
 import { 
@@ -30,6 +31,8 @@ export const VocabularyGame: React.FC<VocabularyGameProps> = ({
   onUpdateProgress,
 }) => {
   const isMl = progress.lang === 'ml';
+  const selectedBand = progress.selectedLevel === 'Advanced' ? 'Advanced' : progress.selectedLevel === 'Intermediate' ? 'Intermediate' : 'Beginner';
+  const availableVocabulary = [...availableVocabulary, ...LEVEL_availableVocabulary].filter((item) => !item.level || selectedBand === 'Advanced' || item.level === selectedBand);
 
   const [activeMode, setActiveMode] = useState<VocabMode>('quiz');
   const [currentWordIndex, setCurrentWordIndex] = useState<number>(0);
@@ -50,11 +53,11 @@ export const VocabularyGame: React.FC<VocabularyGameProps> = ({
   // Spelling game state
   const [spellingInput, setSpellingInput] = useState<string[]>([]);
 
-  const currentWord = VOCABULARY_LIST[currentWordIndex % VOCABULARY_LIST.length];
+  const currentWord = availableVocabulary[currentWordIndex % availableVocabulary.length];
 
   // Options for Meaning Quiz
   const quizOptions = useMemo(() => {
-    const distractors = VOCABULARY_LIST
+    const distractors = availableVocabulary
       .filter((v) => v.id !== currentWord.id)
       .sort(() => 0.5 - Math.random())
       .slice(0, 3)
@@ -65,7 +68,7 @@ export const VocabularyGame: React.FC<VocabularyGameProps> = ({
 
   // Options for Picture Quiz
   const pictureOptions = useMemo(() => {
-    const distractors = VOCABULARY_LIST
+    const distractors = availableVocabulary
       .filter((v) => v.id !== currentWord.id)
       .sort(() => 0.5 - Math.random())
       .slice(0, 3)
@@ -76,8 +79,8 @@ export const VocabularyGame: React.FC<VocabularyGameProps> = ({
 
   // 4 words for Match Tiles
   const matchBatch = useMemo(() => {
-    const start = (currentWordIndex * 4) % (VOCABULARY_LIST.length - 4);
-    return VOCABULARY_LIST.slice(start, start + 4);
+    const start = (currentWordIndex * 4) % (availableVocabulary.length - 4);
+    return availableVocabulary.slice(start, start + 4);
   }, [currentWordIndex]);
 
   const matchEnglishWords = useMemo(() => {
@@ -140,7 +143,7 @@ export const VocabularyGame: React.FC<VocabularyGameProps> = ({
   const handleNextWord = () => {
     setSelectedOption(null);
     setHasAnswered(false);
-    setCurrentWordIndex((prev) => (prev + 1) % VOCABULARY_LIST.length);
+    setCurrentWordIndex((prev) => (prev + 1) % availableVocabulary.length);
   };
 
   // Match tile click
@@ -192,7 +195,7 @@ export const VocabularyGame: React.FC<VocabularyGameProps> = ({
 
   // Filtered explorer items
   const filteredWords = useMemo(() => {
-    return VOCABULARY_LIST.filter((w) => {
+    return availableVocabulary.filter((w) => {
       const matchCat = selectedCategory === 'All' || w.category === selectedCategory;
       const matchText =
         w.word.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -207,7 +210,7 @@ export const VocabularyGame: React.FC<VocabularyGameProps> = ({
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
         <div>
           <span className="text-xs font-bold uppercase tracking-wider text-[#37D6A0] bg-emerald-50 px-2.5 py-1 rounded-lg">
-            {isMl ? '50+ ഇംഗ്ലീഷ് വാക്കുകൾ' : '50+ Core Vocabulary'}
+            {isMl ? `${availableVocabulary.length} ഇംഗ്ലീഷ് വാക്കുകൾ · ${selectedBand}` : `${availableVocabulary.length} Words · ${selectedBand}`}
           </span>
           <h1 className="text-2xl font-black text-slate-900 mt-2">
             {isMl ? 'പദസമ്പത്ത് ക്വസ്റ്റ് (Vocabulary Quest)' : 'Vocabulary Games'}
@@ -225,7 +228,7 @@ export const VocabularyGame: React.FC<VocabularyGameProps> = ({
             {isMl ? 'പഠിച്ച വാക്കുകൾ' : 'Learned Words'}
           </div>
           <div className="text-lg font-black text-[#4F7CFF] tabular-nums">
-            {progress.wordsLearned.length} / {VOCABULARY_LIST.length}
+            {progress.wordsLearned.length} / {availableVocabulary.length}
           </div>
         </div>
       </div>
@@ -264,7 +267,7 @@ export const VocabularyGame: React.FC<VocabularyGameProps> = ({
       {activeMode === 'quiz' && (
         <div className="max-w-xl mx-auto bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-6">
           <div className="flex items-center justify-between text-xs text-slate-400 border-b border-slate-100 pb-3">
-            <span>Word {currentWordIndex + 1} of {VOCABULARY_LIST.length}</span>
+            <span>Word {currentWordIndex + 1} of {availableVocabulary.length}</span>
             <span className="font-bold text-[#4F7CFF]">+{10} XP for correct answer</span>
           </div>
 
