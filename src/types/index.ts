@@ -55,6 +55,7 @@ export interface UserProgress {
 
 export interface VocabItem {
   id: string;
+  level?: 'Intermediate' | 'Advanced';
   word: string;
   malayalam: string;
   phonetic: string;
