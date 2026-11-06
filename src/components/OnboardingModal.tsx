@@ -17,7 +17,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
 }) => {
   const [lang, setLang] = useState<Language>(progress.lang || 'en');
   const [name, setName] = useState<string>(progress.userName === 'English Learner' ? '' : progress.userName);
-  const [level, setLevel] = useState<UserLevel>('Beginner 1 (Absolute)');
+  const [level, setLevel] = useState<UserLevel>(progress.selectedLevel || 'Beginner 1 (Absolute)');
   const [goal, setGoal] = useState<DailyGoal>(progress.dailyGoalMinutes as DailyGoal || 15);
   const [step, setStep] = useState<number>(1);
 
@@ -29,6 +29,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
     onComplete({
       userName: name.trim() || (isMl ? 'ഇംഗ്ലീഷ് പഠിതാവ്' : 'English Learner'),
       lang,
+      selectedLevel: level,
       dailyGoalMinutes: goal,
       hasCompletedOnboarding: true,
     });
@@ -46,7 +47,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
           <p className="text-white/90 text-sm mt-1 font-medium font-malayalam">
             {isMl 
               ? 'മലയാളികൾക്കായുള്ള ലളിതമായ ഇംഗ്ലീഷ് പഠന ഗെയിം' 
-              : 'Interactive English learning game for Malayalam beginners'}
+              : 'Free English practice for Malayalam speakers'}
           </p>
 
           {/* Language Toggle in Top Corner */}
@@ -111,6 +112,18 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                       titleMl: 'ലെവൽ 3: സംസാരിക്കാൻ മടി (Need Fluency)',
                       desc: isMl ? 'ഇംഗ്ലീഷ് വായിക്കാൻ അറിയാം, സംസാരിക്കാൻ പേടി' : 'Can read English, need confidence to speak'
                     }
+                    {
+                      id: 'Intermediate' as UserLevel,
+                      titleEn: 'Intermediate: Build confidence',
+                      titleMl: 'ഇന്റർമീഡിയറ്റ്: ആത്മവിശ്വാസത്തോടെ ഇംഗ്ലീഷ് ഉപയോഗിക്കുക',
+                      desc: isMl ? 'ദൈനംദിന സംഭാഷണവും വ്യാകരണവും മെച്ചപ്പെടുത്തുക' : 'Improve everyday conversation, grammar and writing'
+                    },
+                    {
+                      id: 'Advanced' as UserLevel,
+                      titleEn: 'Advanced: Communicate naturally',
+                      titleMl: 'അഡ്വാൻസ്ഡ്: സ്വാഭാവികമായി ആശയവിനിമയം നടത്തുക',
+                      desc: isMl ? 'വിപുലമായ പദസമ്പത്തും വ്യക്തമായ എഴുത്തും' : 'Develop fluent expression, richer vocabulary and clear writing'
+                    },
                   ].map((item) => (
                     <button
                       key={item.id}
@@ -188,8 +201,8 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                 <Sparkles className="w-4 h-4 text-amber-600 shrink-0" />
                 <p>
                   {isMl
-                    ? 'രജിസ്ട്രേഷൻ ആവശ്യമില്ല! നിങ്ങളുടെ പുരോഗതി നിങ്ങളുടെ ഫോണിൽ/ബ്രൗസറിൽ തനിയെ സൂക്ഷിക്കപ്പെടും.'
-                    : 'No registration needed! Your XP and streak will be safely saved in your browser.'}
+                    ? 'അക്കൗണ്ട് ഇല്ലാതെയും പരിശീലിക്കാം. ഉപകരണങ്ങൾക്കിടയിൽ പുരോഗതി സൂക്ഷിക്കാൻ പിന്നീട് സൈൻ ഇൻ ചെയ്യാം.'
+                    : 'You can practise without an account. Sign in later to sync progress across devices.'}
                 </p>
               </div>
 
