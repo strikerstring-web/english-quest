@@ -6,14 +6,14 @@ const STORAGE_KEY = 'english_quest_user_progress_v1';
 export const DEFAULT_USER_PROGRESS: UserProgress = {
   userName: 'English Learner',
   level: 1,
-  xp: 40,
-  coins: 50,
-  streak: 1,
-  lastActiveDate: new Date().toISOString().split('T')[0],
+  xp: 0,
+  coins: 0,
+  streak: 0,
+  lastActiveDate: new Date().toLocaleDateString('en-CA'),
   dailyGoalMinutes: 15,
   speakingMinutes: 0,
   sentencesWritten: 0,
-  wordsLearned: ['v1', 'v2'],
+  wordsLearned: [],
   completedLessons: [],
   unlockedStages: 1,
   stageMastery: { 1: 0 },
@@ -33,7 +33,7 @@ export function loadUserProgress(): UserProgress {
     const parsed = JSON.parse(raw);
 
     // Check and update daily streak
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = new Date().toLocaleDateString('en-CA');
     const lastActive = parsed.lastActiveDate || todayStr;
 
     if (lastActive !== todayStr) {
@@ -156,5 +156,5 @@ export function resetAllProgress(): UserProgress {
   if (typeof window !== 'undefined') {
     localStorage.removeItem(STORAGE_KEY);
   }
-  return { ...DEFAULT_USER_PROGRESS };
+  return { ...DEFAULT_USER_PROGRESS, wordsLearned: [], completedLessons: [], stageMastery: { 1: 0 }, writingHistory: [], speakingHistory: [] };
 }
