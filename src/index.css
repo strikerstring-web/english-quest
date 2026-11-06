@@ -36,3 +36,23 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #94A3B8;
 }
+
+
+/* Accessibility and refined interaction states */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+:where(button, a, input, textarea, select):focus-visible {
+  outline: 3px solid rgba(79, 124, 255, 0.55);
+  outline-offset: 3px;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
