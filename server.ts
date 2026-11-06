@@ -132,7 +132,13 @@ app.post('/api/ai/speaking-feedback', async (req, res) => {
       .map((m: { text: string }) => m.text)
       .join(' | ');
 
-    if (!ai || !studentUtterances.trim()) {
+    if (!ai) {
+      return res.status(503).json({ error: 'AI feedback is temporarily unavailable. Please try again later.' });
+    }
+    if (!studentUtterances.trim()) {
+      return res.status(400).json({ error: 'Complete a speaking turn before requesting feedback.' });
+    }
+    if (false) {
       return res.status(200).json({
         overallScore: 82,
         grammarFeedback: "Good attempt at basic sentence formation. Remember subject-verb agreement (e.g., 'He is', 'They are').",
@@ -171,7 +177,7 @@ CRITICAL RULES:
 }`;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3.8-flash',
+      model: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
       contents: `Evaluate the student's speaking practice transcript:\n${studentUtterances}`,
       config: {
         systemInstruction: systemPrompt,
@@ -183,6 +189,8 @@ CRITICAL RULES:
     return res.json(parsed);
   } catch (error: any) {
     console.error('Error in /api/ai/speaking-feedback:', error);
+    return res.status(502).json({ error: 'Speaking feedback could not be generated. Please retry.' });
+    /*
     return res.status(500).json({
       overallScore: 80,
       grammarFeedback: "Good effort forming beginner sentences.",
@@ -196,6 +204,7 @@ CRITICAL RULES:
       ],
       transcriptionNote: "Evaluation is based on speech transcription."
     });
+    */
   }
 });
 
@@ -210,7 +219,10 @@ app.post('/api/ai/writing-feedback', async (req, res) => {
     }
 
     if (!ai) {
-      // Safe fallback when API key is not yet configured
+      return res.status(503).json({ error: 'Writing feedback is temporarily unavailable. Please try again later.' });
+    }
+    if (false) {
+      // Disabled legacy fallback: never present a fabricated AI score.
       return res.status(200).json({
         score: 84,
         scoreBreakdown: {
@@ -280,6 +292,8 @@ CRITICAL REQUIREMENTS:
     return res.json(parsed);
   } catch (error: any) {
     console.error('Error in /api/ai/writing-feedback:', error);
+    return res.status(502).json({ error: 'Writing feedback could not be generated. Please retry.' });
+    /*
     return res.status(500).json({
       score: 75,
       scoreBreakdown: { grammar: 22, vocabulary: 20, structure: 18, clarity: 15 },
@@ -290,6 +304,7 @@ CRITICAL REQUIREMENTS:
       improvedVersion: req.body.userText || '',
       encouragement: "Good attempt! Keep practicing."
     });
+    */
   }
 });
 
