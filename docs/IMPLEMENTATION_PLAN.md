@@ -72,9 +72,13 @@ Adapt and test these rules against the exact document schema before production. 
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /users/{userId}/{document=**} {
-      allow read, write: if request.auth != null
-                         && request.auth.uid == userId;
+    match /users/{userId} {
+      allow read, create, update, delete: if request.auth != null
+                                           && request.auth.uid == userId;
+      match /{document=**} {
+        allow read, write: if request.auth != null
+                           && request.auth.uid == userId;
+      }
     }
   }
 }
