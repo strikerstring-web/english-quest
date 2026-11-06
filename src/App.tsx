@@ -4,10 +4,6 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { onAuthStateChanged, User } from 'firebase/auth';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { auth, db } from './firebase';
-import { AuthPanel } from './components/AuthPanel';
 import { UserProgress, Language } from './types';
 import { loadUserProgress, saveUserProgress } from './utils/storage';
 import { Navbar } from './components/Navbar';
@@ -27,52 +23,11 @@ export default function App() {
   const [activeSection, setActiveSection] = useState<string>('home');
   const [isOnboardingOpen, setIsOnboardingOpen] = useState<boolean>(false);
   const [gameSubTab, setGameSubTab] = useState<'vocab' | 'grammar'>('vocab');
-  const [signedInUser, setSignedInUser] = useState<User | null>(null);
-  const [cloudReady, setCloudReady] = useState(false);
 
   // Sync to local storage
   useEffect(() => {
     saveUserProgress(progress);
   }, [progress]);
-
-  // Restore signed-in identity and load the learner's cloud progress.
-  useEffect(() => {
-    if (!auth || !db) return;
-    return onAuthStateChanged(auth, async (user) => {
-      setSignedInUser(user);
-      if (!user) { setCloudReady(false); return; }
-      try {
-        const progressRef = doc(db, 'users', user.uid, 'progress', 'current');
-        const snapshot = await getDoc(progressRef);
-        if (snapshot.exists() && snapshot.data().progress) {
-          setProgress({ ...loadUserProgress(), ...snapshot.data().progress, userName: user.displayName || snapshot.data().progress.userName || 'English Learner' });
-        } else {
-          await setDoc(progressRef, { progress, updatedAt: serverTimestamp() });
-        }
-        await setDoc(doc(db, 'users', user.uid), {
-          displayName: user.displayName || '',
-          email: user.email || '',
-          updatedAt: serverTimestamp()
-        }, { merge: true });
-      } catch (error) {
-        console.error('Cloud progress could not be loaded:', error);
-      } finally {
-        setCloudReady(true);
-      }
-    });
-  }, []);
-
-  // Signed-in progress is stored in the learner's private Firestore document.
-  useEffect(() => {
-    if (!signedInUser || !db || !cloudReady) return;
-    const timer = window.setTimeout(() => {
-      void setDoc(doc(db, 'users', signedInUser.uid, 'progress', 'current'), {
-        progress,
-        updatedAt: serverTimestamp()
-      }).catch((error) => console.error('Cloud progress sync failed:', error));
-    }, 700);
-    return () => window.clearTimeout(timer);
-  }, [progress, signedInUser, cloudReady]);
 
   // Open onboarding on first load if not completed
   useEffect(() => {
@@ -105,7 +60,8 @@ export default function App() {
         activeSection={activeSection}
       />
 
-      <AuthPanel user={signedInUser} />
+
+      <div className="mx-4 my-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-900">Learning runs locally in this browser. Your progress is saved on this device; no account or server is required.</div>
 
       {/* Main Container */}
       <div className="flex-1 flex max-w-7xl w-full mx-auto">
