@@ -27,9 +27,10 @@ The product roadmap covers Beginner, Intermediate, and Advanced learners. The cu
 The repository already contains the core learning experience and sample content. It is **not yet production-ready**:
 
 - Progress currently saves in the browser only; it does not sync across devices.
-- Google and email sign-in are not yet integrated.
-- AI endpoints need production rate limits, validation, error handling, and usage controls.
-- Firebase project configuration, security rules, deployment secrets, and end-to-end testing remain to be completed.
+- Google and email sign-in UI and Firebase client integration are implemented, but require your Firebase web-app configuration.
+- Signed-in progress sync uses Firestore; publish and test the included `firestore.rules` before enabling public sign-up.
+- Gemini API routes remain unavailable until a server-side API key is configured. Provider quotas and hosting limits still apply.
+- AI routes have basic per-instance IP rate limiting; a shared rate-limit store, verified Firebase ID tokens, stronger payload validation, and end-to-end security testing are still required before a high-traffic public launch.
 
 See [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md) for the implementation phases, Firebase architecture, security checklist, and deployment steps.
 
@@ -51,6 +52,8 @@ Open the local URL printed by Vite/Express (normally http://localhost:3000).
 Never commit real secrets. Keep local values in `.env` and production values in the hosting provider's encrypted environment-variable settings.
 
 - `GEMINI_API_KEY` — server-side Gemini API key; never expose it in client-side Vite variables.
+- `GEMINI_MODEL` — optional server-side model override (defaults to `gemini-2.5-flash`).
+- `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_STORAGE_BUCKET`, `VITE_FIREBASE_MESSAGING_SENDER_ID`, `VITE_FIREBASE_APP_ID` — Firebase web-app values; these are client config values, not admin credentials.
 - `APP_URL` — canonical deployed application URL, if required by server-side callbacks.
 - Firebase client configuration — public Firebase web-app configuration values are supplied to the client at build time; enforce access through Firebase Authentication, Firestore Security Rules, and App Check rather than treating the web config as a secret.
 
@@ -61,3 +64,13 @@ The app will not charge learners or include paid learning tiers. Hosting, databa
 ## License
 
 The source files currently carry Apache-2.0 SPDX headers. Confirm and add a repository-wide LICENSE file before publishing a formal open-source release.
+
+
+## Firebase activation checklist
+
+1. Create a Firebase project and add a Web App.
+2. Enable Google and Email/Password providers in Firebase Authentication.
+3. Create Firestore and publish the repository's `firestore.rules` (after reviewing and testing them).
+4. Add your Vercel deployment hostname to Firebase Authentication's authorized domains.
+5. Add all six `VITE_FIREBASE_*` values to the Vercel project's Production and Preview environment settings, then redeploy.
+6. Add `GEMINI_API_KEY` as a server-only Vercel environment variable to activate AI feedback and conversation. Never put it in a `VITE_*` variable or commit it.
