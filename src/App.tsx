@@ -15,7 +15,6 @@ import { Sidebar } from './components/Sidebar';
 import { MobileNav } from './components/MobileNav';
 import { OnboardingModal } from './components/OnboardingModal';
 import { HomeView } from './components/HomeView';
-import { LearnView } from './components/LearnView';
 import { SpeakingArena } from './components/SpeakingArena';
 import { WritingStudio } from './components/WritingStudio';
 import { VocabularyGame } from './components/VocabularyGame';
@@ -124,14 +123,6 @@ export default function App() {
               progress={progress}
               onNavigate={setActiveSection}
               onUpdateProgress={handleUpdateProgress}
-            />
-          )}
-
-          {activeSection === 'learn' && (
-            <LearnView
-              progress={progress}
-              onUpdateProgress={handleUpdateProgress}
-              onNavigate={setActiveSection}
             />
           )}
 
