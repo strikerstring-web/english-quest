@@ -189,7 +189,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
           <h3 className="font-bold text-slate-900">{isMl ? 'പദസമ്പത്ത്' : 'Vocabulary'}</h3><p className="text-xs text-slate-500 mt-1">{isMl ? 'പുതിയ വാക്കുകളും അർത്ഥങ്ങളും പഠിക്കുക' : 'Learn words, meanings and pronunciation'}</p><div className="mt-4 text-xs font-bold text-emerald-600">{isMl ? 'പഠിക്കാം' : 'Practice now'} →</div>
         </button>
         {/* Grammar practice */}
-        <button onClick={() => onNavigate('games')} className="text-left p-5 rounded-2xl bg-white border border-slate-200/80 hover:border-amber-300 shadow-sm transition-all group hover:shadow-md">
+        <button onClick={() => onNavigate('grammar')} className="text-left p-5 rounded-2xl bg-white border border-slate-200/80 hover:border-amber-300 shadow-sm transition-all group hover:shadow-md">
           <div className="flex items-center justify-between mb-3"><div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center"><Gamepad2 className="w-5 h-5" /></div><span className="text-xs font-semibold text-slate-500">{progress.completedLessons.filter((item) => item.startsWith('grammar_')).length} {isMl ? 'വിഷയങ്ങൾ' : 'topics done'}</span></div>
           <h3 className="font-bold text-slate-900">{isMl ? 'ഗ്രാമർ പരിശീലനം' : 'Grammar Games'}</h3><p className="text-xs text-slate-500 mt-1">{isMl ? 'വ്യാകരണം ചോദ്യങ്ങളിലൂടെ പഠിക്കുക' : 'Build sentences and practise grammar rules'}</p><div className="mt-4 text-xs font-bold text-amber-600">{isMl ? 'പരിശീലിക്കാം' : 'Practice now'} →</div>
         </button>
