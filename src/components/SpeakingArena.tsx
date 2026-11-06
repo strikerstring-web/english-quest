@@ -187,20 +187,11 @@ export const SpeakingArena: React.FC<SpeakingArenaProps> = ({
         xp: prev.xp + 10,
         level: Math.floor((prev.xp + 10) / 100) + 1
       }));
-    } catch (e) {
+    } catch (e: any) {
       console.error('Failed to get conversation response:', e);
-      // Fallback
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: `ai_${Date.now()}`,
-          sender: 'ai',
-          text: "That is great! I enjoy practicing English with you.",
-          malayalamExplanation: "അത് കൊള്ളാം! നിങ്ങളുമായി ഇംഗ്ലീഷ് പരിശീലിക്കാൻ എനിക്ക് സന്തോഷമുണ്ട്.",
-          suggestedReplies: ["Thank you very much!", "Could you ask me another question?", "I am learning every day."],
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        }
-      ]);
+      setRecordingError(e?.message || (isMl
+        ? 'AI സംഭാഷണം ഇപ്പോൾ ലഭ്യമല്ല. കുറച്ച് കഴിഞ്ഞ് വീണ്ടും ശ്രമിക്കുക.'
+        : 'AI conversation is currently unavailable. Please try again shortly.'));
     } finally {
       setIsLoadingAI(false);
     }
@@ -243,21 +234,12 @@ export const SpeakingArena: React.FC<SpeakingArenaProps> = ({
           speakingHistory: [historyEntry, ...prev.speakingHistory].slice(0, 20)
         };
       });
-    } catch (e) {
+    } catch (e: any) {
       console.error('Failed to get feedback report:', e);
-      setFeedbackReport({
-        overallScore: 82,
-        grammarFeedback: "Good attempt using subject-verb structures. Watch pronoun agreement.",
-        vocabularyFeedback: "Effective everyday beginner words.",
-        sentenceImprovement: "Try connecting two thoughts using 'because' or 'and'.",
-        fluencyTip: "Read aloud simple English sentences 5 minutes every day.",
-        malayalamSummary: "വളരെ നല്ല തുടക്കം! ലളിതമായ വാക്യങ്ങൾ ദിവസവും ഉറക്കെ വായിച്ച് പരിശീലിക്കുക.",
-        suggestedPractice: [
-          "I want to improve my English speaking skills.",
-          "It is nice talking with you today."
-        ],
-        transcriptionNote: "Evaluation is based on speech text transcription."
-      });
+      setFeedbackReport(null);
+      setRecordingError(e?.message || (isMl
+        ? 'സംസാര വിലയിരുത്തൽ ഇപ്പോൾ ലഭ്യമല്ല. വീണ്ടും ശ്രമിക്കുക.'
+        : 'Speaking assessment is currently unavailable. Please try again.'));
     } finally {
       setIsGeneratingFeedback(false);
     }
