@@ -79,10 +79,11 @@ export const WritingStudio: React.FC<WritingStudioProps> = ({
           activityTitle: selectedPrompt.titleEn,
           promptText: selectedPrompt.descriptionEn,
           userText: userText.trim(),
-          userLevel: 'Beginner'
+          userLevel: progress.selectedLevel || 'Beginner'
         })
       });
 
+      if (!res.ok) throw new Error((await res.json()).error || 'Feedback is temporarily unavailable.');
       const data: WritingFeedbackResponse = await res.json();
       setFeedback(data);
       triggerRewardEffect(true);
