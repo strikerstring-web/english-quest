@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { UserProgress, WritingPrompt } from '../types';
 import { WRITING_PROMPTS } from '../data/writingPrompts';
+import { evaluateWritingLocally } from '../utils/localLearning';
 import { speakText } from '../utils/speech';
 import { triggerRewardEffect } from '../utils/storage';
 import { 
@@ -71,19 +72,7 @@ export const WritingStudio: React.FC<WritingStudioProps> = ({
     setIsEvaluating(true);
 
     try {
-      const res = await fetch('/api/ai/writing-feedback', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          activityTitle: selectedPrompt.titleEn,
-          promptText: selectedPrompt.descriptionEn,
-          userText: userText.trim(),
-          userLevel: progress.selectedLevel || 'Beginner'
-        })
-      });
-
-      if (!res.ok) throw new Error((await res.json()).error || 'Feedback is temporarily unavailable.');
-      const data: WritingFeedbackResponse = await res.json();
+      const data: WritingFeedbackResponse = evaluateWritingLocally(userText.trim(), selectedPrompt, progress.selectedLevel || 'Beginner');
       setFeedback(data);
       triggerRewardEffect(true);
 
@@ -134,15 +123,15 @@ export const WritingStudio: React.FC<WritingStudioProps> = ({
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
         <div>
           <span className="text-xs font-bold uppercase tracking-wider text-[#8055E8] bg-purple-50 px-2.5 py-1 rounded-lg">
-            {isMl ? '100-പോയിന്റ് AI മൂല്യനിർണ്ണയം' : '100-Point AI Rubric Studio'}
+            {isMl ? '100-പോയിന്റ് എഴുത്ത് വിലയിരുത്തൽ' : '100-Point Writing Practice'}
           </span>
           <h1 className="text-2xl font-black text-slate-900 mt-2">
             {isMl ? 'റൈറ്റിംഗ് സ്റ്റുഡിയോ (Writing Studio)' : 'Writing Studio'}
           </h1>
           <p className="text-xs sm:text-sm text-slate-600 font-malayalam mt-1">
             {isMl
-              ? 'വാക്യങ്ങൾ എഴുതുക, മലയാള വിശദീകരണത്തോടെ തെറ്റുകൾ തിരുത്തുക, മികച്ച പദാവലി പഠിക്കുക'
-              : 'Write English sentences, get instant 100-point scoring, Malayalam corrections, and vocabulary upgrades.'}
+              ? 'വാക്യങ്ങൾ എഴുതുക, മലയാള വിശദീകരണത്തോടെ തിരുത്തലുകൾ പഠിക്കുക, മികച്ച പദാവലി വികസിപ്പിക്കുക'
+              : 'Write English sentences and get instant on-device scoring, Malayalam explanations, corrections, and vocabulary suggestions.'}
           </p>
         </div>
 
@@ -296,8 +285,8 @@ export const WritingStudio: React.FC<WritingStudioProps> = ({
             <Sparkles className="w-4 h-4" />
             <span>
               {isEvaluating
-                ? (isMl ? 'AI പരിശോധിക്കുന്നു (100-ൽ സ്കോർ)...' : 'Evaluating with AI (100-Point Rubric)...')
-                : (isMl ? 'പരിശോധിച്ച് സ്കോർ നേടൂ' : 'Submit & Get 100-Pt AI Score')}
+                ? (isMl ? 'പരിശോധിക്കുന്നു (100-ൽ സ്കോർ)...' : 'Checking your writing (100-Point Rubric)...')
+                : (isMl ? 'പരിശോധിച്ച് സ്കോർ നേടൂ' : 'Submit & Get Writing Score')}
             </span>
           </button>
         </div>
