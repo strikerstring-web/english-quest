@@ -157,10 +157,11 @@ export const SpeakingArena: React.FC<SpeakingArenaProps> = ({
           scenarioTitle: selectedScenario.titleEn,
           scenarioDescription: selectedScenario.descriptionEn,
           messages: updatedMessages.map((m) => ({ sender: m.sender, text: m.text })),
-          userLevel: 'Beginner'
+          userLevel: progress.selectedLevel || 'Beginner'
         })
       });
 
+      if (!res.ok) throw new Error((await res.json()).error || 'AI service is temporarily unavailable.');
       const data = await res.json();
       const aiReply = data.reply || (data.fallback && data.fallback.reply) || "That's very interesting! Tell me more.";
       const aiMl = data.malayalamExplanation || (data.fallback && data.fallback.malayalamExplanation) || "അത് വളരെ നല്ലതാണ്! കൂടുതൽ പറയാമോ?";
@@ -218,6 +219,7 @@ export const SpeakingArena: React.FC<SpeakingArenaProps> = ({
         })
       });
 
+      if (!res.ok) throw new Error((await res.json()).error || 'Speaking feedback is temporarily unavailable.');
       const data: SpeakingFeedbackData = await res.json();
       setFeedbackReport(data);
       triggerRewardEffect(true);
