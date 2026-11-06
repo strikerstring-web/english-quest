@@ -32,7 +32,7 @@ export const VocabularyGame: React.FC<VocabularyGameProps> = ({
 }) => {
   const isMl = progress.lang === 'ml';
   const selectedBand = progress.selectedLevel === 'Advanced' ? 'Advanced' : progress.selectedLevel === 'Intermediate' ? 'Intermediate' : 'Beginner';
-  const availableVocabulary = [...availableVocabulary, ...LEVEL_availableVocabulary].filter((item) => !item.level || selectedBand === 'Advanced' || item.level === selectedBand);
+  const availableVocabulary = [...VOCABULARY_LIST, ...LEVEL_VOCABULARY_LIST].filter((item) => !item.level || selectedBand === 'Advanced' || item.level === selectedBand);
 
   const [activeMode, setActiveMode] = useState<VocabMode>('quiz');
   const [currentWordIndex, setCurrentWordIndex] = useState<number>(0);
@@ -64,7 +64,7 @@ export const VocabularyGame: React.FC<VocabularyGameProps> = ({
       .map((v) => v.malayalam);
     const all = [currentWord.malayalam, ...distractors];
     return all.sort(() => 0.5 - Math.random());
-  }, [currentWordIndex]);
+  }, [currentWordIndex, availableVocabulary]);
 
   // Options for Picture Quiz
   const pictureOptions = useMemo(() => {
