@@ -41,7 +41,12 @@ export const GrammarGame: React.FC<GrammarGameProps> = ({
   const selectedBand = progress.selectedLevel === 'Advanced' ? 'Advanced' : progress.selectedLevel === 'Intermediate' ? 'Intermediate' : 'Beginner';
   const availableTopics = [...GRAMMAR_TOPICS, ...LEVEL_GRAMMAR_TOPICS].filter((topic) => !topic.level || selectedBand === 'Advanced' || topic.level === selectedBand);
   const activeTopic = availableTopics.find((t) => t.id === selectedTopicId) || availableTopics[0];
-  const currentQ: GrammarQuestion = activeTopic.questions[currentQuestionIdx % activeTopic.questions.length];
+  const pendingQuestionIndices = activeTopic.questions
+    .map((question, index) => ({ question, index }))
+    .filter(({ question }) => !progress.completedLessons.includes(`grammar_question_${question.id}`))
+    .map(({ index }) => index);
+  const allQuestionsMastered = pendingQuestionIndices.length === 0;
+  const currentQ: GrammarQuestion = activeTopic.questions[currentQuestionIdx] || activeTopic.questions[0];
 
   React.useEffect(() => {
     if (!availableTopics.some((topic) => topic.id === selectedTopicId)) {
@@ -117,16 +122,21 @@ export const GrammarGame: React.FC<GrammarGameProps> = ({
   };
 
   const handleNextQuestion = () => {
-    if (currentQuestionIdx < activeTopic.questions.length - 1) {
-      setCurrentQuestionIdx(currentQuestionIdx + 1);
+    const nextPendingIndex = pendingQuestionIndices.find((index) => index > currentQuestionIdx);
+    if (nextPendingIndex !== undefined) {
+      setCurrentQuestionIdx(nextPendingIndex);
       return;
     }
-    triggerRewardEffect(true);
+    if (allQuestionsMastered) triggerRewardEffect(true);
     setShowTopicCompletion(true);
   };
 
   const replayCurrentTopic = () => {
-    setCurrentQuestionIdx(0);
+    if (pendingQuestionIndices.length === 0) {
+      setShowTopicCompletion(true);
+      return;
+    }
+    setCurrentQuestionIdx(pendingQuestionIndices[0]);
     setShowTopicCompletion(false);
     setSelectedAnswer(null);
     setHasCheckedAnswer(false);
@@ -137,8 +147,11 @@ export const GrammarGame: React.FC<GrammarGameProps> = ({
     const currentIndex = availableTopics.findIndex((topic) => topic.id === activeTopic.id);
     const nextTopic = availableTopics[(currentIndex + 1) % availableTopics.length];
     if (nextTopic) {
+      const firstPendingIndex = nextTopic.questions.findIndex(
+        (question) => !progress.completedLessons.includes(`grammar_question_${question.id}`)
+      );
       setSelectedTopicId(nextTopic.id);
-      setCurrentQuestionIdx(0);
+      setCurrentQuestionIdx(firstPendingIndex >= 0 ? firstPendingIndex : 0);
     }
     setShowTopicCompletion(false);
   };
@@ -184,8 +197,11 @@ export const GrammarGame: React.FC<GrammarGameProps> = ({
             <button
               key={topic.id}
               onClick={() => {
+                const firstPendingIndex = topic.questions.findIndex(
+                  (question) => !progress.completedLessons.includes(`grammar_question_${question.id}`)
+                );
                 setSelectedTopicId(topic.id);
-                setCurrentQuestionIdx(0);
+                setCurrentQuestionIdx(firstPendingIndex >= 0 ? firstPendingIndex : 0);
                 setShowTopicCompletion(false);
               }}
               className={`px-3.5 py-2.5 rounded-2xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 ${
@@ -201,7 +217,7 @@ export const GrammarGame: React.FC<GrammarGameProps> = ({
         })}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {!allQuestionsMastered && <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column: Topic Rules & Explanations in Malayalam */}
         <div className="lg:col-span-1 bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
           <div className="border-b border-slate-100 pb-3">
@@ -376,25 +392,25 @@ export const GrammarGame: React.FC<GrammarGameProps> = ({
             </div>
           )}
         </div>
-      </div>
+      </div>}
 
-      {showTopicCompletion && (
+      {(showTopicCompletion || allQuestionsMastered) && (
         <div className="max-w-2xl mx-auto bg-emerald-50 border border-emerald-200 rounded-3xl p-6 sm:p-8 text-center space-y-4 shadow-sm">
           <div className="text-4xl">🎉</div>
           <h2 className="text-xl font-black text-slate-900">
             {isMl ? 'ഈ വിഷയം പൂർത്തിയായി!' : 'Topic Completed!'}
           </h2>
           <p className="text-sm text-slate-600 font-malayalam">
-            {isMl
-              ? 'അടുത്ത വിഷയത്തിലേക്ക് പോകണോ, അതോ ഈ വിഷയം വീണ്ടും പരിശീലിക്കണോ?'
-              : 'Would you like to move to the next topic or practise this topic again?'}
+            {allQuestionsMastered
+              ? (isMl ? 'ഈ വിഷയത്തിലെ എല്ലാ ചോദ്യങ്ങളും നിങ്ങൾ ശരിയായി പൂർത്തിയാക്കി. ഇനി അടുത്ത വിഷയത്തിലേക്ക് പോകാം.' : 'You have mastered every question in this topic. You are ready to move on.')
+              : (isMl ? 'ശരിയായി ഉത്തരം നൽകിയ ചോദ്യങ്ങൾ വീണ്ടും വരില്ല. തെറ്റിയ ചോദ്യങ്ങൾ മാത്രം വീണ്ടും പരിശീലിക്കാം.' : 'Questions you answered correctly are now removed. Replay to practise only the questions you missed.')}
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <button onClick={goToNextTopic} className="px-6 py-3 rounded-xl bg-[#4F7CFF] text-white font-bold text-sm shadow-md hover:bg-[#3E6DE8] transition-colors">
               {isMl ? 'അടുത്ത വിഷയം' : 'Go to Next Topic'} →
             </button>
-            <button onClick={replayCurrentTopic} className="px-6 py-3 rounded-xl bg-white border border-slate-300 text-slate-800 font-bold text-sm hover:bg-slate-50 transition-colors">
-              <span className="inline-flex items-center gap-2"><RotateCcw className="w-4 h-4" />{isMl ? 'ഇതേ വിഷയം വീണ്ടും പഠിക്കുക' : 'Replay Current Topic'}</span>
+            <button onClick={replayCurrentTopic} disabled={allQuestionsMastered} className="px-6 py-3 rounded-xl bg-white border border-slate-300 text-slate-800 font-bold text-sm hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+              <span className="inline-flex items-center gap-2"><RotateCcw className="w-4 h-4" />{allQuestionsMastered ? (isMl ? 'എല്ലാ ചോദ്യങ്ങളും പഠിച്ചു' : 'All Questions Mastered') : (isMl ? 'തെറ്റിയ ചോദ്യങ്ങൾ വീണ്ടും പരിശീലിക്കുക' : 'Retry Missed Questions')}</span>
             </button>
           </div>
         </div>
