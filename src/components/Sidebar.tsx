@@ -2,7 +2,6 @@ import React from 'react';
 import { UserProgress } from '../types';
 import { 
   Home, 
-  Map, 
   Mic, 
   PenTool, 
   Gamepad2, 
@@ -31,13 +30,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
       labelMl: 'ഹോം (Home)',
       icon: Home,
       badge: null
-    },
-    {
-      id: 'learn',
-      labelEn: 'Learn Path',
-      labelMl: 'പഠന പാത (5 Stages)',
-      icon: Map,
-      badge: `Stage ${progress.unlockedStages}`
     },
     {
       id: 'speaking',
