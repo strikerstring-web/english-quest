@@ -32,6 +32,7 @@ export const GrammarGame: React.FC<GrammarGameProps> = ({
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [hasCheckedAnswer, setHasCheckedAnswer] = useState<boolean>(false);
   const [isAnswerCorrect, setIsAnswerCorrect] = useState<boolean>(false);
+  const [showTopicCompletion, setShowTopicCompletion] = useState<boolean>(false);
   
   // Arrange sentence mode state
   const [arrangedTokens, setArrangedTokens] = useState<string[]>([]);
@@ -118,11 +119,28 @@ export const GrammarGame: React.FC<GrammarGameProps> = ({
   const handleNextQuestion = () => {
     if (currentQuestionIdx < activeTopic.questions.length - 1) {
       setCurrentQuestionIdx(currentQuestionIdx + 1);
-    } else {
-      // Completed all questions in topic
-      triggerRewardEffect(true);
+      return;
+    }
+    triggerRewardEffect(true);
+    setShowTopicCompletion(true);
+  };
+
+  const replayCurrentTopic = () => {
+    setCurrentQuestionIdx(0);
+    setShowTopicCompletion(false);
+    setSelectedAnswer(null);
+    setHasCheckedAnswer(false);
+    setIsAnswerCorrect(false);
+  };
+
+  const goToNextTopic = () => {
+    const currentIndex = availableTopics.findIndex((topic) => topic.id === activeTopic.id);
+    const nextTopic = availableTopics[(currentIndex + 1) % availableTopics.length];
+    if (nextTopic) {
+      setSelectedTopicId(nextTopic.id);
       setCurrentQuestionIdx(0);
     }
+    setShowTopicCompletion(false);
   };
 
   return (
@@ -168,6 +186,7 @@ export const GrammarGame: React.FC<GrammarGameProps> = ({
               onClick={() => {
                 setSelectedTopicId(topic.id);
                 setCurrentQuestionIdx(0);
+                setShowTopicCompletion(false);
               }}
               className={`px-3.5 py-2.5 rounded-2xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 ${
                 isSelected
@@ -358,6 +377,28 @@ export const GrammarGame: React.FC<GrammarGameProps> = ({
           )}
         </div>
       </div>
+
+      {showTopicCompletion && (
+        <div className="max-w-2xl mx-auto bg-emerald-50 border border-emerald-200 rounded-3xl p-6 sm:p-8 text-center space-y-4 shadow-sm">
+          <div className="text-4xl">🎉</div>
+          <h2 className="text-xl font-black text-slate-900">
+            {isMl ? 'ഈ വിഷയം പൂർത്തിയായി!' : 'Topic Completed!'}
+          </h2>
+          <p className="text-sm text-slate-600 font-malayalam">
+            {isMl
+              ? 'അടുത്ത വിഷയത്തിലേക്ക് പോകണോ, അതോ ഈ വിഷയം വീണ്ടും പരിശീലിക്കണോ?'
+              : 'Would you like to move to the next topic or practise this topic again?'}
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <button onClick={goToNextTopic} className="px-6 py-3 rounded-xl bg-[#4F7CFF] text-white font-bold text-sm shadow-md hover:bg-[#3E6DE8] transition-colors">
+              {isMl ? 'അടുത്ത വിഷയം' : 'Go to Next Topic'} →
+            </button>
+            <button onClick={replayCurrentTopic} className="px-6 py-3 rounded-xl bg-white border border-slate-300 text-slate-800 font-bold text-sm hover:bg-slate-50 transition-colors">
+              <span className="inline-flex items-center gap-2"><RotateCcw className="w-4 h-4" />{isMl ? 'ഇതേ വിഷയം വീണ്ടും പഠിക്കുക' : 'Replay Current Topic'}</span>
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
