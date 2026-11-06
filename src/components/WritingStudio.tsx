@@ -97,6 +97,10 @@ export const WritingStudio: React.FC<WritingStudioProps> = ({
           score: data.score,
           text: userText.trim()
         };
+        const alreadyRewarded = prev.writingHistory.some((entry) =>
+          entry.activityTitle === historyEntry.activityTitle && entry.text.trim() === historyEntry.text
+        );
+        if (alreadyRewarded) return prev;
         const newSentences = prev.sentencesWritten + 1;
         const newXp = prev.xp + 35;
         const newLevel = Math.floor(newXp / 100) + 1;
