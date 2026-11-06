@@ -39,28 +39,51 @@ interface ChatMessage {
   timestamp: string;
 }
 
-async function readApiJson<T = Record<string, any>>(response: Response, fallbackMessage: string): Promise<T> {
-  const raw = await response.text();
-  let data: any = null;
+type LocalReply = { reply: string; malayalam: string; suggestions: string[] };
 
-  if (raw.trim()) {
-    try {
-      data = JSON.parse(raw);
-    } catch {
-      const detail = raw.trim().replace(/\\s+/g, ' ').slice(0, 180);
-      throw new Error(response.ok
-        ? 'The AI server returned an invalid response. Please try again.'
-        : `${fallbackMessage} (HTTP ${response.status})${detail ? `: ${detail}` : ''}`);
-    }
-  }
+function createLocalConversationReply(userText: string, scenario: SpeakingScenario, turn: number): LocalReply {
+  const text = userText.toLowerCase();
+  const name = text.match(/my name is ([a-z]+)/)?.[1];
+  const templates: Array<{ test: RegExp; replies: string[]; ml: string; suggestions: string[] }> = [
+    { test: /\b(name|called)\b/, replies: [`Nice to meet you, ${name ? name[0].toUpperCase()+name.slice(1) : 'my friend'}! What do you enjoy doing?`, 'That is a lovely name. Which place are you from?'], ml: 'നിങ്ങളെ പരിചയപ്പെട്ടതിൽ സന്തോഷം! നിങ്ങൾക്ക് എന്താണ് ചെയ്യാൻ ഇഷ്ടം?', suggestions: ['I enjoy reading books.', 'I am from Kerala.', 'I like learning English.'] },
+    { test: /\b(father|mother|brother|sister|family|parents)\b/, replies: ['That sounds nice. What do you usually do together?', 'Tell me a little more about your family.'], ml: 'അത് സന്തോഷകരമാണ്. നിങ്ങൾ കുടുംബത്തോടൊപ്പം സാധാരണ എന്താണ് ചെയ്യാറുള്ളത്?', suggestions: ['We spend time together.', 'We visit our relatives.', 'I help my parents at home.'] },
+    { test: /\b(college|school|class|teacher|study|student|course)\b/, replies: ['What subject do you like the most?', 'What is one thing you learned recently?'], ml: 'നിങ്ങൾക്ക് ഏറ്റവും ഇഷ്ടമുള്ള വിഷയം ഏതാണ്? അടുത്തിടെ പഠിച്ച ഒരു കാര്യം പറയാമോ?', suggestions: ['I like English.', 'My favourite subject is science.', 'I enjoy learning new things.'] },
+    { test: /\b(food|eat|rice|tea|coffee|restaurant|hungry)\b/, replies: ['That sounds delicious! Do you like cooking too?', 'What food would you recommend to a visitor?'], ml: 'അത് രുചികരമാണെന്ന് തോന്നുന്നു! നിങ്ങൾക്ക് പാചകം ചെയ്യാനും ഇഷ്ടമാണോ?', suggestions: ['I like biryani.', 'I sometimes cook at home.', 'My favourite food is dosa.'] },
+    { test: /\b(shop|buy|price|cost|money|size|colour|color)\b/, replies: ['Would you like to compare another option?', 'What is most important to you: price, quality, or size?'], ml: 'മറ്റൊരു സാധനവുമായി താരതമ്യം ചെയ്യണോ? വില, ഗുണമേന്മ, വലുപ്പം എന്നിവയിൽ ഏതാണ് പ്രധാന്യം?', suggestions: ['I prefer good quality.', 'How much does it cost?', 'Do you have another colour?'] },
+    { test: /\b(friend|meet|hello|hi|good morning|how are you)\b/, replies: ['I am doing well, thank you! What do you like to do in your free time?', 'It is great to meet you. How was your day?'], ml: 'എനിക്ക് സുഖമാണ്, നന്ദി! ഒഴിവുസമയത്ത് എന്താണ് ചെയ്യാൻ ഇഷ്ടം?', suggestions: ['I like reading.', 'My day was good.', 'I enjoy playing football.'] },
+    { test: /\b(work|job|office|business)\b/, replies: ['What do you like most about your work?', 'What skills would you like to improve?'], ml: 'നിങ്ങളുടെ ജോലിയിൽ ഏറ്റവും ഇഷ്ടമുള്ള കാര്യം എന്താണ്? മെച്ചപ്പെടുത്താൻ ആഗ്രഹിക്കുന്ന കഴിവുകൾ ഏതൊക്കെയാണ്?', suggestions: ['I enjoy working with people.', 'I want to improve my communication.', 'I am learning new skills.'] },
+    { test: /\b(travel|trip|visit|place|holiday|journey)\b/, replies: ['That sounds exciting! What would you like to see there?', 'Who would you like to travel with?'], ml: 'അത് ആവേശകരമാണ്! അവിടെ എന്താണ് കാണാൻ ആഗ്രഹിക്കുന്നത്?', suggestions: ['I want to visit new places.', 'I like travelling with friends.', 'I enjoy nature.'] },
+    { test: /\b(happy|sad|excited|nervous|tired|feel)\b/, replies: ['Thank you for sharing that. What made you feel this way?', 'I understand. What usually helps you feel better?'], ml: 'നിങ്ങളുടെ അനുഭവം പങ്കുവെച്ചതിന് നന്ദി. ഇങ്ങനെ തോന്നാൻ കാരണമെന്താണ്?', suggestions: ['I feel happy today.', 'I feel better now.', 'I want to stay positive.'] }
+  ];
+  const matched = templates.find((item) => item.test.test(text));
+  const generic = [
+    { reply: 'That is interesting. Could you explain a little more?', malayalam: 'അത് രസകരമാണ്. കുറച്ചുകൂടി വിശദീകരിക്കാമോ?', suggestions: ['I think it is useful.', 'Can you give an example?', 'I want to learn more.'] },
+    { reply: 'I see what you mean. Can you tell me why you think so?', malayalam: 'നിങ്ങൾ പറയുന്നത് മനസ്സിലായി. അങ്ങനെ ചിന്തിക്കാൻ കാരണം പറയാമോ?', suggestions: ['Because it is important.', 'It helps me every day.', 'That is my experience.'] },
+    { reply: 'Good answer! Can you share an example from your daily life?', malayalam: 'നല്ല മറുപടി! നിങ്ങളുടെ ദൈനംദിന ജീവിതത്തിൽ നിന്നൊരു ഉദാഹരണം പറയാമോ?', suggestions: ['For example, I practise daily.', 'I do it with my friends.', 'I learned it recently.'] }
+  ];
+  if (matched) return { reply: matched.replies[turn % matched.replies.length], malayalam: matched.ml, suggestions: matched.suggestions };
+  return generic[turn % generic.length];
+}
 
-  if (!response.ok) {
-    throw new Error(data?.error || `${fallbackMessage} (HTTP ${response.status})`);
-  }
-  if (!data || typeof data !== 'object') {
-    throw new Error('The AI server returned an empty response. Please try again.');
-  }
-  return data as T;
+function createLocalSpeakingFeedback(messages: ChatMessage[], isMl: boolean): SpeakingFeedbackData {
+  const userMessages = messages.filter((message) => message.sender === 'user');
+  const text = userMessages.map((message) => message.text).join(' ');
+  const words = text.trim().split(/\s+/).filter(Boolean);
+  const uniqueWords = new Set(words.map((word) => word.toLowerCase().replace(/[^a-z']/g, '')));
+  const hasConnectors = /\b(and|but|because|so|also|when|although)\b/i.test(text);
+  const hasCompleteSentences = /\b(i am|i have|i like|i want|i can|we are|it is|there is|my)\b/i.test(text);
+  const score = Math.max(35, Math.min(98, 50 + Math.min(userMessages.length * 5, 15) + Math.min(uniqueWords.size, 20) + (hasConnectors ? 7 : 0) + (hasCompleteSentences ? 6 : 0)));
+  const sample = userMessages.find((message) => message.text.trim())?.text || 'I want to improve my English.';
+  return {
+    overallScore: score,
+    grammarFeedback: hasCompleteSentences ? 'You used some complete sentence patterns. Keep checking subject–verb agreement and verb tense.' : 'Try forming complete sentences with a subject and a verb, such as “I study English every day.”',
+    vocabularyFeedback: uniqueWords.size >= 12 ? 'You used a varied set of words. Try adding precise adjectives and topic-specific vocabulary.' : 'Your vocabulary is understandable. Learn a few new words for each topic and use them in complete sentences.',
+    sentenceImprovement: sample.length > 90 ? 'Break long ideas into two clear sentences and connect them with because, but, or so.' : 'Try adding one reason or detail to make your answer more informative.',
+    fluencyTip: 'Speak in short groups of words, pause naturally, and repeat the corrected sentence aloud. Browser speech recognition may make transcription mistakes.',
+    malayalamSummary: isMl ? 'ഇത് നിങ്ങളുടെ ടൈപ്പ് ചെയ്തതോ ശബ്ദത്തിൽ നിന്ന് തിരിച്ചറിഞ്ഞതോ ആയ വാക്കുകളെ അടിസ്ഥാനമാക്കിയുള്ള പ്രാദേശിക പരിശീലന വിലയിരുത്തലാണ്. കൂടുതൽ വാക്കുകളും പൂർണ്ണവാക്യങ്ങളും ഉപയോഗിച്ച് പരിശീലിക്കുക.' : 'This is an on-device practice estimate based on your transcript, not an AI or pronunciation assessment. Keep practising complete sentences and varied vocabulary.',
+    suggestedPractice: ['I would like to explain my idea.', 'I enjoy learning something new every day.', 'I think this is useful because it helps me.'],
+    transcriptionNote: 'This score is generated locally from your text transcript. It does not measure accent, pronunciation, or actual speaking fluency.'
+  };
 }
 
 interface SpeakingFeedbackData {
@@ -174,21 +197,8 @@ export const SpeakingArena: React.FC<SpeakingArenaProps> = ({
     setIsLoadingAI(true);
 
     try {
-      const res = await fetch('/api/ai/conversation', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          scenarioTitle: selectedScenario.titleEn,
-          scenarioDescription: selectedScenario.descriptionEn,
-          messages: updatedMessages.map((m) => ({ sender: m.sender, text: m.text })),
-          userLevel: progress.selectedLevel || 'Beginner'
-        })
-      });
-
-      const data = await readApiJson(res, 'AI conversation is temporarily unavailable.');
-      const aiReply = data.reply || (data.fallback && data.fallback.reply) || "That's very interesting! Tell me more.";
-      const aiMl = data.malayalamExplanation || (data.fallback && data.fallback.malayalamExplanation) || "അത് വളരെ നല്ലതാണ്! കൂടുതൽ പറയാമോ?";
-      const aiSuggestions = data.suggestedReplies || (data.fallback && data.fallback.suggestedReplies) || [];
+      const { reply: aiReply, malayalam: aiMl, suggestions: aiSuggestions } =
+        createLocalConversationReply(messageContent, selectedScenario, updatedMessages.filter((m) => m.sender === 'user').length);
 
       const aiMsg: ChatMessage = {
         id: `ai_${Date.now()}`,
@@ -224,16 +234,7 @@ export const SpeakingArena: React.FC<SpeakingArenaProps> = ({
   const handleEndSessionAndGetFeedback = async () => {
     setIsGeneratingFeedback(true);
     try {
-      const res = await fetch('/api/ai/speaking-feedback', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          scenarioTitle: selectedScenario.titleEn,
-          messages: messages.map((m) => ({ sender: m.sender, text: m.text }))
-        })
-      });
-
-      const data = await readApiJson<SpeakingFeedbackData>(res, 'Speaking feedback is temporarily unavailable.');
+      const data = createLocalSpeakingFeedback(messages, isMl);
       setFeedbackReport(data);
       triggerRewardEffect(true);
 
@@ -273,7 +274,7 @@ export const SpeakingArena: React.FC<SpeakingArenaProps> = ({
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
         <div>
           <span className="text-xs font-bold uppercase tracking-wider text-[#4F7CFF] bg-blue-50 px-2.5 py-1 rounded-lg">
-            {isMl ? 'യഥാർത്ഥ AI സംഭാഷണ പങ്കാളി' : 'AI Conversation Partner'}
+            {isMl ? 'സംഭാഷണ പരിശീലന പങ്കാളി' : 'Conversation Practice Partner'}
           </span>
           <h1 className="text-2xl font-black text-slate-900 mt-2">
             {isMl ? 'സ്പീക്കിംഗ് അരീന (Speaking Arena)' : 'Speaking Arena'}
@@ -281,7 +282,7 @@ export const SpeakingArena: React.FC<SpeakingArenaProps> = ({
           <p className="text-xs sm:text-sm text-slate-600 font-malayalam mt-1">
             {isMl
               ? 'മൈക്രോഫോണിലൂടെയോ എഴുതിയോ ഇംഗ്ലീഷിൽ സംസാരിക്കാം. ഓരോ വാക്യത്തിനും മലയാള തർജ്ജമയും ലഭിക്കും.'
-              : 'Speak or type with your AI English partner. Get audio pronunciation, Malayalam translations, and instant diagnostic feedback.'}
+              : 'Practise with guided replies, audio pronunciation, Malayalam translations, and instant local feedback.'}
           </p>
         </div>
 
@@ -296,7 +297,7 @@ export const SpeakingArena: React.FC<SpeakingArenaProps> = ({
           }`}
         >
           <Award className="w-4 h-4" />
-          <span>{isGeneratingFeedback ? (isMl ? 'വിലയിരുത്തുന്നു...' : 'Analyzing...') : (isMl ? 'പരിശീലന ഫലം കാണുക' : 'Get AI Feedback')}</span>
+          <span>{isGeneratingFeedback ? (isMl ? 'വിലയിരുത്തുന്നു...' : 'Analyzing...') : (isMl ? 'പരിശീലന ഫലം കാണുക' : 'Get Practice Feedback')}</span>
         </button>
       </div>
 
@@ -435,7 +436,7 @@ export const SpeakingArena: React.FC<SpeakingArenaProps> = ({
           {isLoadingAI && (
             <div className="flex items-center gap-2 p-3 bg-slate-50 text-slate-400 rounded-2xl w-fit text-xs animate-pulse">
               <Sparkles className="w-4 h-4 text-[#4F7CFF] animate-spin-slow" />
-              <span>{isMl ? 'AI പങ്കാളി ചിന്തിക്കുന്നു...' : 'AI partner is typing...'}</span>
+              <span>{isMl ? 'മറുപടി തയ്യാറാക്കുന്നു...' : 'Preparing a practice reply...'}</span>
             </div>
           )}
 
@@ -511,7 +512,7 @@ export const SpeakingArena: React.FC<SpeakingArenaProps> = ({
                 : (isMl ? 'മൈക്ക് ലഭ്യമല്ലെങ്കിൽ ടൈപ്പ് ചെയ്യാം' : 'Microphone & keyboard supported')}
             </span>
             <span className="font-malayalam">
-              {isMl ? 'പരിശീലന ശേഷം "AI Feedback" ബട്ടൺ അമർത്തുക' : 'Tap "Get AI Feedback" anytime'}
+              {isMl ? 'പരിശീലനത്തിന് ശേഷം ഫലം കാണാം' : 'View your practice feedback anytime'}
             </span>
           </div>
         </div>
