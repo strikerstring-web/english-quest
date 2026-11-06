@@ -1,6 +1,6 @@
 export type Language = 'en' | 'ml';
 
-export type UserLevel = 'Beginner 1 (Absolute)' | 'Beginner 2 (Basic Words)' | 'Beginner 3 (Short Sentences)';
+export type UserLevel = 'Beginner 1 (Absolute)' | 'Beginner 2 (Basic Words)' | 'Beginner 3 (Short Sentences)' | 'Intermediate' | 'Advanced';
 
 export type DailyGoal = 5 | 15 | 30; // minutes
 
@@ -33,6 +33,7 @@ export interface SpeakingHistoryEntry {
 
 export interface UserProgress {
   userName: string;
+  selectedLevel?: UserLevel;
   level: number;
   xp: number;
   coins: number;
