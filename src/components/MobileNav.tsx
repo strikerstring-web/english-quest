@@ -1,6 +1,6 @@
 import React from 'react';
 import { UserProgress } from '../types';
-import { Home, Map, Mic, PenTool, Gamepad2, User } from 'lucide-react';
+import { Home, Mic, PenTool, Gamepad2, User } from 'lucide-react';
 
 interface MobileNavProps {
   progress: UserProgress;
@@ -17,7 +17,6 @@ export const MobileNav: React.FC<MobileNavProps> = ({
 
   const navTabs = [
     { id: 'home', labelEn: 'Home', labelMl: 'ഹോം', icon: Home },
-    { id: 'learn', labelEn: 'Learn', labelMl: 'പഠനം', icon: Map },
     { id: 'speaking', labelEn: 'Speaking', labelMl: 'സംസാരം', icon: Mic },
     { id: 'writing', labelEn: 'Writing', labelMl: 'എഴുത്ത്', icon: PenTool },
     { id: 'games', labelEn: 'Games', labelMl: 'ഗെയിംസ്', icon: Gamepad2 },
@@ -26,7 +25,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({
 
   return (
     <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 shadow-lg pb-safe">
-      <div className="grid grid-cols-6 items-center h-16 max-w-lg mx-auto px-1">
+      <div className="grid grid-cols-5 items-center h-16 max-w-lg mx-auto px-1">
         {navTabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeSection === tab.id;
