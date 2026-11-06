@@ -121,7 +121,10 @@ export default function App() {
           {activeSection === 'home' && (
             <HomeView
               progress={progress}
-              onNavigate={setActiveSection}
+              onNavigate={(section) => {
+                if (section === 'grammar') { setGameSubTab('grammar'); setActiveSection('games'); }
+                else { setActiveSection(section); }
+              }}
               onUpdateProgress={handleUpdateProgress}
             />
           )}
