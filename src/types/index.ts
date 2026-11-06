@@ -83,6 +83,7 @@ export interface GrammarQuestion {
 
 export interface GrammarTopic {
   id: string;
+  level?: 'Intermediate' | 'Advanced';
   titleEn: string;
   titleMl: string;
   descriptionEn: string;
