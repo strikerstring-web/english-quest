@@ -115,7 +115,7 @@ export const WritingStudio: React.FC<WritingStudioProps> = ({
       setErrorMsg(err?.message || (isMl
         ? 'AI പരിശോധന ഇപ്പോൾ ലഭ്യമല്ല. കുറച്ച് കഴിഞ്ഞ് വീണ്ടും ശ്രമിക്കുക.'
         : 'AI feedback is currently unavailable. Please try again shortly.'));
-    }    } finally {
+    } finally {
       setIsEvaluating(false);
     }
   };
