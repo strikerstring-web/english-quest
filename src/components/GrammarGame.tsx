@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { UserProgress, GrammarTopic, GrammarQuestion } from '../types';
 import { GRAMMAR_TOPICS } from '../data/grammar';
 import { LEVEL_GRAMMAR_TOPICS } from '../data/levelGrammar';
+import { GRAMMAR_RETRY_QUESTIONS } from '../data/grammarAlternates';
 import { triggerRewardEffect } from '../utils/storage';
 import { 
   Sparkles, 
@@ -33,6 +34,7 @@ export const GrammarGame: React.FC<GrammarGameProps> = ({
   const [hasCheckedAnswer, setHasCheckedAnswer] = useState<boolean>(false);
   const [isAnswerCorrect, setIsAnswerCorrect] = useState<boolean>(false);
   const [showTopicCompletion, setShowTopicCompletion] = useState<boolean>(false);
+  const [isRetryRound, setIsRetryRound] = useState<boolean>(false);
   
   // Arrange sentence mode state
   const [arrangedTokens, setArrangedTokens] = useState<string[]>([]);
@@ -46,7 +48,10 @@ export const GrammarGame: React.FC<GrammarGameProps> = ({
     .filter(({ question }) => !progress.completedLessons.includes(`grammar_question_${question.id}`))
     .map(({ index }) => index);
   const allQuestionsMastered = pendingQuestionIndices.length === 0;
-  const currentQ: GrammarQuestion = activeTopic.questions[currentQuestionIdx] || activeTopic.questions[0];
+  const originalQuestion: GrammarQuestion = activeTopic.questions[currentQuestionIdx] || activeTopic.questions[0];
+  const currentQ: GrammarQuestion = isRetryRound
+    ? (GRAMMAR_RETRY_QUESTIONS[originalQuestion.id] || originalQuestion)
+    : originalQuestion;
 
   React.useEffect(() => {
     if (!availableTopics.some((topic) => topic.id === selectedTopicId)) {
@@ -64,7 +69,7 @@ export const GrammarGame: React.FC<GrammarGameProps> = ({
     setSelectedAnswer(null);
     setHasCheckedAnswer(false);
     setIsAnswerCorrect(false);
-  }, [currentQuestionIdx, selectedTopicId]);
+  }, [currentQuestionIdx, selectedTopicId, isRetryRound]);
 
   const handleSelectOption = (opt: string) => {
     if (hasCheckedAnswer) return;
@@ -77,7 +82,7 @@ export const GrammarGame: React.FC<GrammarGameProps> = ({
   };
 
   const awardCorrectAnswer = () => {
-    const questionKey = `grammar_question_${currentQ.id}`;
+    const questionKey = `grammar_question_${originalQuestion.id}`;
     if (progress.completedLessons.includes(questionKey)) return;
 
     triggerRewardEffect(false);
@@ -137,6 +142,7 @@ export const GrammarGame: React.FC<GrammarGameProps> = ({
       return;
     }
     setCurrentQuestionIdx(pendingQuestionIndices[0]);
+    setIsRetryRound(true);
     setShowTopicCompletion(false);
     setSelectedAnswer(null);
     setHasCheckedAnswer(false);
@@ -152,6 +158,7 @@ export const GrammarGame: React.FC<GrammarGameProps> = ({
       );
       setSelectedTopicId(nextTopic.id);
       setCurrentQuestionIdx(firstPendingIndex >= 0 ? firstPendingIndex : 0);
+      setIsRetryRound(false);
     }
     setShowTopicCompletion(false);
   };
@@ -202,6 +209,7 @@ export const GrammarGame: React.FC<GrammarGameProps> = ({
                 );
                 setSelectedTopicId(topic.id);
                 setCurrentQuestionIdx(firstPendingIndex >= 0 ? firstPendingIndex : 0);
+                setIsRetryRound(false);
                 setShowTopicCompletion(false);
               }}
               className={`px-3.5 py-2.5 rounded-2xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 ${
@@ -247,7 +255,7 @@ export const GrammarGame: React.FC<GrammarGameProps> = ({
           <div className="flex items-center justify-between border-b border-slate-100 pb-3 text-xs">
             <div className="flex items-center gap-2">
               <span className="font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-blue-50 text-[#4F7CFF]">
-                {currentQ.type.replace('_', ' ').toUpperCase()}
+                {currentQ.type.replace('_', ' ').toUpperCase()}{isRetryRound && GRAMMAR_RETRY_QUESTIONS[originalQuestion.id] ? (isMl ? ' · പുതിയ ഉദാഹരണം' : ' · NEW EXAMPLE') : ''}
               </span>
               <span className="text-slate-400">
                 Question {currentQuestionIdx + 1} of {activeTopic.questions.length}
