@@ -39,6 +39,30 @@ interface ChatMessage {
   timestamp: string;
 }
 
+async function readApiJson<T = Record<string, any>>(response: Response, fallbackMessage: string): Promise<T> {
+  const raw = await response.text();
+  let data: any = null;
+
+  if (raw.trim()) {
+    try {
+      data = JSON.parse(raw);
+    } catch {
+      const detail = raw.trim().replace(/\\s+/g, ' ').slice(0, 180);
+      throw new Error(response.ok
+        ? 'The AI server returned an invalid response. Please try again.'
+        : `${fallbackMessage} (HTTP ${response.status})${detail ? `: ${detail}` : ''}`);
+    }
+  }
+
+  if (!response.ok) {
+    throw new Error(data?.error || `${fallbackMessage} (HTTP ${response.status})`);
+  }
+  if (!data || typeof data !== 'object') {
+    throw new Error('The AI server returned an empty response. Please try again.');
+  }
+  return data as T;
+}
+
 interface SpeakingFeedbackData {
   overallScore: number;
   grammarFeedback: string;
@@ -161,8 +185,7 @@ export const SpeakingArena: React.FC<SpeakingArenaProps> = ({
         })
       });
 
-      if (!res.ok) throw new Error((await res.json()).error || 'AI service is temporarily unavailable.');
-      const data = await res.json();
+      const data = await readApiJson(res, 'AI conversation is temporarily unavailable.');
       const aiReply = data.reply || (data.fallback && data.fallback.reply) || "That's very interesting! Tell me more.";
       const aiMl = data.malayalamExplanation || (data.fallback && data.fallback.malayalamExplanation) || "അത് വളരെ നല്ലതാണ്! കൂടുതൽ പറയാമോ?";
       const aiSuggestions = data.suggestedReplies || (data.fallback && data.fallback.suggestedReplies) || [];
@@ -210,8 +233,7 @@ export const SpeakingArena: React.FC<SpeakingArenaProps> = ({
         })
       });
 
-      if (!res.ok) throw new Error((await res.json()).error || 'Speaking feedback is temporarily unavailable.');
-      const data: SpeakingFeedbackData = await res.json();
+      const data = await readApiJson<SpeakingFeedbackData>(res, 'Speaking feedback is temporarily unavailable.');
       setFeedbackReport(data);
       triggerRewardEffect(true);
 
