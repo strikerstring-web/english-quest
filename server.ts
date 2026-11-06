@@ -14,7 +14,21 @@ const app = express();
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 const isProd = process.env.NODE_ENV === 'production';
 
-app.use(express.json());
+app.use(express.json({ limit: '32kb' }));
+
+const requestBuckets = new Map<string, { count: number; resetAt: number }>();
+app.use('/api/ai', (req, res, next) => {
+  const key = req.ip || req.socket.remoteAddress || 'unknown';
+  const now = Date.now();
+  const bucket = requestBuckets.get(key);
+  if (!bucket || bucket.resetAt <= now) {
+    requestBuckets.set(key, { count: 1, resetAt: now + 60_000 });
+    return next();
+  }
+  if (bucket.count >= 20) return res.status(429).json({ error: 'Too many requests. Please try again in a minute.' });
+  bucket.count += 1;
+  return next();
+});
 
 // Initialize Gemini SDK with telemetry header
 const getAIClient = () => {
@@ -72,7 +86,7 @@ RULES:
 }`;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3.8-flash',
+      model: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
       contents: `Previous conversation:\n${conversationText}\n\nRespond as the conversation partner in JSON.`,
       config: {
         systemInstruction: systemPrompt,
@@ -300,7 +314,11 @@ async function startServer() {
   });
 }
 
-startServer().catch((err) => {
-  console.error('Failed to start server:', err);
-  process.exit(1);
-});
+if (process.env.VERCEL !== '1') {
+  startServer().catch((err) => {
+    console.error('Failed to start server:', err);
+    process.exit(1);
+  });
+}
+
+export default app;
