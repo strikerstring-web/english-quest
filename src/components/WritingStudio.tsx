@@ -111,26 +111,11 @@ export const WritingStudio: React.FC<WritingStudioProps> = ({
       });
     } catch (err: any) {
       console.error('Writing evaluation error:', err);
-      // Safe fallback
-      setFeedback({
-        score: 85,
-        scoreBreakdown: {
-          grammar: 26,
-          vocabulary: 22,
-          structure: 20,
-          clarity: 17
-        },
-        originalSentence: userText,
-        correctedSentence: userText.trim().replace(/^[a-z]/, (c) => c.toUpperCase()) + (userText.endsWith('.') ? '' : '.'),
-        explanationMalayalam: "നിങ്ങളുടെ വാക്യം നന്നായിട്ടുണ്ട്! വലിയക്ഷരം (Capital letter) കൊണ്ടും ഫുൾസ്റ്റോപ്പ് കൊണ്ടും അവസാനിപ്പിക്കാൻ ശ്രദ്ധിക്കുക.",
-        betterVocabulary: [
-          { original: "like", better: "enjoy", malayalam: "ആസ്വദിക്കുന്നു" },
-          { original: "good", better: "splendid", malayalam: "അത്യുത്തമം" }
-        ],
-        improvedVersion: userText.trim() + " It was a wonderful experience.",
-        encouragement: "Very good effort! Keep practicing every day."
-      });
-    } finally {
+      setFeedback(null);
+      setErrorMsg(err?.message || (isMl
+        ? 'AI പരിശോധന ഇപ്പോൾ ലഭ്യമല്ല. കുറച്ച് കഴിഞ്ഞ് വീണ്ടും ശ്രമിക്കുക.'
+        : 'AI feedback is currently unavailable. Please try again shortly.'));
+    }    } finally {
       setIsEvaluating(false);
     }
   };
