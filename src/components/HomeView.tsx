@@ -10,9 +10,7 @@ import {
   CheckCircle2, 
   Circle, 
   ArrowRight, 
-  Play, 
   Gamepad2, 
-  Map, 
   BookOpen, 
   Sparkles,
   Trophy
@@ -78,14 +76,6 @@ export const HomeView: React.FC<HomeViewProps> = ({
             </p>
 
             <div className="pt-2 flex flex-wrap gap-3">
-              <button
-                onClick={() => onNavigate('learn')}
-                className="px-5 py-3 rounded-xl bg-gradient-to-r from-[#4F7CFF] to-[#8055E8] hover:opacity-95 text-white font-bold text-sm flex items-center gap-2 shadow-lg shadow-[#4F7CFF]/25 active:scale-95 transition-all"
-              >
-                <Play className="w-4 h-4 fill-white" />
-                <span>{isMl ? 'പഠനം തുടരുക (Continue Learning)' : 'Continue Learning'}</span>
-              </button>
-              
               <button
                 onClick={() => onNavigate('speaking')}
                 className="px-4 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-sm flex items-center gap-2 backdrop-blur-md transition-all active:scale-95"
@@ -325,30 +315,6 @@ export const HomeView: React.FC<HomeViewProps> = ({
           <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-white/10 rounded-full blur-xl pointer-events-none" />
         </div>
 
-        {/* 5-Stage Path Banner */}
-        <div 
-          onClick={() => onNavigate('learn')}
-          className="p-6 rounded-3xl bg-gradient-to-br from-purple-600 to-violet-700 text-white shadow-lg cursor-pointer group hover:scale-[1.01] transition-transform relative overflow-hidden"
-        >
-          <div className="relative z-10 space-y-2">
-            <span className="inline-block px-2.5 py-1 rounded-lg bg-white/20 text-xs font-bold uppercase tracking-wider backdrop-blur-md">
-              {isMl ? '5 ഘട്ടങ്ങളായുള്ള പാത' : '5-Stage Quest Path'}
-            </span>
-            <h3 className="text-xl font-black">
-              {isMl ? `ഘട്ടം ${progress.unlockedStages}: ഇംഗ്ലീഷ് പഠന വഴി` : `Stage ${progress.unlockedStages} in Progress`}
-            </h3>
-            <p className="text-white/80 text-xs font-malayalam max-w-sm">
-              {isMl
-                ? 'അടിത്തറ മുതൽ സംസാരവും എഴുത്തും വരെയുള്ള ഘട്ടം ഘട്ടമായുള്ള പാഠങ്ങൾ'
-                : 'Foundations -> Sentence Building -> Conversations -> Speaking -> Writing'}
-            </p>
-            <div className="pt-2 flex items-center gap-1.5 text-xs font-extrabold text-white group-hover:translate-x-1 transition-transform">
-              <span>{isMl ? 'ഘട്ടങ്ങൾ കാണുക' : 'View Learning Stages'}</span>
-              <ArrowRight className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-white/10 rounded-full blur-xl pointer-events-none" />
-        </div>
       </div>
     </div>
   );
