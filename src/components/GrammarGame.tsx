@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { UserProgress, GrammarTopic, GrammarQuestion } from '../types';
 import { GRAMMAR_TOPICS } from '../data/grammar';
+import { LEVEL_GRAMMAR_TOPICS } from '../data/levelGrammar';
 import { triggerRewardEffect } from '../utils/storage';
 import { 
   Sparkles, 
@@ -36,8 +37,17 @@ export const GrammarGame: React.FC<GrammarGameProps> = ({
   const [arrangedTokens, setArrangedTokens] = useState<string[]>([]);
   const [availableTokens, setAvailableTokens] = useState<string[]>([]);
 
-  const activeTopic = GRAMMAR_TOPICS.find((t) => t.id === selectedTopicId) || GRAMMAR_TOPICS[0];
+  const selectedBand = progress.selectedLevel === 'Advanced' ? 'Advanced' : progress.selectedLevel === 'Intermediate' ? 'Intermediate' : 'Beginner';
+  const availableTopics = [...GRAMMAR_TOPICS, ...LEVEL_GRAMMAR_TOPICS].filter((topic) => !topic.level || selectedBand === 'Advanced' || topic.level === selectedBand);
+  const activeTopic = availableTopics.find((t) => t.id === selectedTopicId) || availableTopics[0];
   const currentQ: GrammarQuestion = activeTopic.questions[currentQuestionIdx % activeTopic.questions.length];
+
+  React.useEffect(() => {
+    if (!availableTopics.some((topic) => topic.id === selectedTopicId)) {
+      setSelectedTopicId(availableTopics[0]?.id || 'pronouns');
+      setCurrentQuestionIdx(0);
+    }
+  }, [progress.selectedLevel]);
 
   // Initialize arrange sentence tokens when question changes
   React.useEffect(() => {
@@ -127,7 +137,7 @@ export const GrammarGame: React.FC<GrammarGameProps> = ({
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
         <div>
           <span className="text-xs font-bold uppercase tracking-wider text-[#8055E8] bg-purple-50 px-2.5 py-1 rounded-lg">
-            {isMl ? '9 പ്രധാന വ്യാകരണ വിഷയങ്ങൾ' : '9 Essential Grammar Topics'}
+            {isMl ? `${availableTopics.length} വ്യാകരണ വിഷയങ്ങൾ` : `${availableTopics.length} Grammar Topics · ${selectedBand}`}
           </span>
           <h1 className="text-2xl font-black text-slate-900 mt-2">
             {isMl ? 'ഗ്രാമർ ലാബ് (Grammar Lab)' : 'Grammar Quests'}
@@ -146,7 +156,7 @@ export const GrammarGame: React.FC<GrammarGameProps> = ({
               {isMl ? 'പൂർത്തിയായ വിഷയങ്ങൾ' : 'Topics Done'}
             </div>
             <div className="text-slate-900 font-black">
-              {progress.completedLessons.filter((l) => l.startsWith('grammar_')).length} / 9
+              {progress.completedLessons.filter((l) => availableTopics.some((topic) => l === `grammar_${topic.id}`)).length} / {availableTopics.length}
             </div>
           </div>
         </div>
@@ -154,7 +164,7 @@ export const GrammarGame: React.FC<GrammarGameProps> = ({
 
       {/* Topics Selector Pill Bar */}
       <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-        {GRAMMAR_TOPICS.map((topic) => {
+        {availableTopics.map((topic) => {
           const isDone = progress.completedLessons.includes(`grammar_${topic.id}`);
           const isSelected = selectedTopicId === topic.id;
 
