@@ -14,7 +14,6 @@ import {
   RotateCcw,
   HelpCircle,
   FileText,
-  Lightbulb,
   Copy
 } from 'lucide-react';
 
