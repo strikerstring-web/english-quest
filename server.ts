@@ -237,42 +237,20 @@ app.post('/api/ai/writing-feedback', async (req, res) => {
     if (!ai) {
       return res.status(503).json({ error: 'Writing feedback is temporarily unavailable. Please try again later.' });
     }
-    if (false) {
-      // Disabled legacy fallback: never present a fabricated AI score.
-      return res.status(200).json({
-        score: 84,
-        scoreBreakdown: {
-          grammar: 26,
-          vocabulary: 21,
-          structure: 20,
-          clarity: 17
-        },
-        originalSentence: userText,
-        correctedSentence: userText.trim().replace(/^[a-z]/, (c: string) => c.toUpperCase()) + (userText.endsWith('.') ? '' : '.'),
-        explanationMalayalam: "നിങ്ങളുടെ വാക്യം നന്നായിട്ടുണ്ട്! വലിയക്ഷരം (Capital letter) കൊണ്ടും ഫുൾസ്റ്റോപ്പ് കൊണ്ടും അവസാനിപ്പിക്കാൻ ശ്രദ്ധിക്കുക.",
-        betterVocabulary: [
-          { original: "good", better: "great", malayalam: "മികച്ച" },
-          { original: "like", better: "enjoy", malayalam: "ആസ്വദിക്കുന്നു" }
-        ],
-        improvedVersion: "A polished, natural version of your sentence with smooth structure.",
-        encouragement: "Very nice work! Keep practicing your daily writing."
-      });
-    }
-
     const systemPrompt = `You are a patient, expert English writing mentor for Malayalam-speaking beginners.
 Task Title: "${activityTitle}"
 Task Prompt: "${promptText}"
 Student Level: "${userLevel || 'Beginner'}"
 
 Evaluate the student's submission against this 100-point rubric:
-1. Grammar & Mechanics (30 points max): Subject-verb agreement, tenses, capital letters, punctuation.
+1. Grammar (30 points max): Subject-verb agreement, verb forms, tense consistency, articles, prepositions, and grammatical word order. Do NOT deduct points for capitalization, punctuation, or full stops.
 2. Vocabulary Choice (25 points max): Appropriate word usage for the level.
 3. Sentence Structure (25 points max): Natural English word order (Subject-Verb-Object).
 4. Clarity & Prompt Relevance (20 points max): Did they answer the prompt clearly?
-Total Score = sum of all 4 (0 to 100).
+Total Score = sum of all 4 (0 to 100). Capitalization and punctuation must not reduce the score.
 
 CRITICAL REQUIREMENTS:
-- Provide the exact corrected sentence with errors fixed.
+- Provide the exact corrected sentence with grammar errors fixed. Do not criticize or score capitalization, punctuation, or missing full stops.
 - Provide a clear, simple explanation in Malayalam (മലയാളത്തിൽ എവിടെയാണ് തെറ്റ് പറ്റിയതെന്നും എങ്ങനെ ശരിയാക്കാമെന്നും വിശദീകരിക്കുക).
 - Suggest 1-2 richer vocabulary words with their Malayalam meanings.
 - Provide an improved, natural native version of the sentence.
