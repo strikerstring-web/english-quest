@@ -30,6 +30,13 @@ app.use('/api/ai', (req, res, next) => {
   return next();
 });
 
+app.use('/api/ai', (req, res, next) => {
+  if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) {
+    return res.status(400).json({ error: 'A valid JSON object is required.' });
+  }
+  return next();
+});
+
 // Initialize Gemini SDK with telemetry header
 const getAIClient = () => {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -51,6 +58,9 @@ const getAIClient = () => {
 app.post('/api/ai/conversation', async (req, res) => {
   try {
     const { scenarioTitle, scenarioDescription, messages, userLevel } = req.body;
+    if (!Array.isArray(messages) || messages.length > 30 || !messages.every((m: any) => m && ['user','ai'].includes(m.sender) && typeof m.text === 'string' && m.text.length <= 1000)) {
+      return res.status(400).json({ error: 'Conversation must contain up to 30 valid messages (maximum 1,000 characters each).' });
+    }
     const ai = getAIClient();
 
     if (!ai) {
@@ -125,6 +135,9 @@ RULES:
 app.post('/api/ai/speaking-feedback', async (req, res) => {
   try {
     const { scenarioTitle, messages } = req.body;
+    if (!Array.isArray(messages) || messages.length > 30 || !messages.every((m: any) => m && typeof m.sender === 'string' && typeof m.text === 'string' && m.text.length <= 1000)) {
+      return res.status(400).json({ error: 'Speaking transcript is invalid or too long.' });
+    }
     const ai = getAIClient();
 
     const studentUtterances = (messages || [])
@@ -214,8 +227,11 @@ app.post('/api/ai/writing-feedback', async (req, res) => {
     const { activityTitle, promptText, userText, userLevel } = req.body;
     const ai = getAIClient();
 
-    if (!userText || !userText.trim()) {
-      return res.status(400).json({ error: 'Text cannot be empty' });
+    if (typeof userText !== 'string' || !userText.trim() || userText.length > 5000) {
+      return res.status(400).json({ error: 'Writing must contain 1–5,000 characters.' });
+    }
+    if (typeof activityTitle !== 'string' || typeof promptText !== 'string' || activityTitle.length > 160 || promptText.length > 1000) {
+      return res.status(400).json({ error: 'Writing task details are invalid.' });
     }
 
     if (!ai) {
