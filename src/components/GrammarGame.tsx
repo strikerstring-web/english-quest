@@ -67,21 +67,29 @@ export const GrammarGame: React.FC<GrammarGameProps> = ({
     setIsAnswerCorrect(correct);
     setHasCheckedAnswer(true);
 
-    if (correct) {
-      triggerRewardEffect(false);
-      onUpdateProgress((prev) => {
-        const lessonKey = `grammar_${activeTopic.id}`;
-        const newXp = prev.xp + 15;
-        const newLevel = Math.floor(newXp / 100) + 1;
-        return {
-          ...prev,
-          xp: newXp,
-          level: newLevel,
-          coins: prev.coins + 2,
-          completedLessons: Array.from(new Set([...prev.completedLessons, lessonKey]))
-        };
-      });
-    }
+    if (correct) awardCorrectAnswer();
+  };
+
+  const awardCorrectAnswer = () => {
+    const questionKey = `grammar_question_${currentQ.id}`;
+    if (progress.completedLessons.includes(questionKey)) return;
+
+    triggerRewardEffect(false);
+    onUpdateProgress((prev) => {
+      const completed = new Set([...prev.completedLessons, questionKey]);
+      const topicMastered = activeTopic.questions.every((question) =>
+        completed.has(`grammar_question_${question.id}`)
+      );
+      if (topicMastered) completed.add(`grammar_${activeTopic.id}`);
+      const newXp = prev.xp + 15;
+      return {
+        ...prev,
+        xp: newXp,
+        level: Math.floor(newXp / 100) + 1,
+        coins: prev.coins + 2,
+        completedLessons: Array.from(completed)
+      };
+    });
   };
 
   // Arrange tokens click
@@ -104,21 +112,7 @@ export const GrammarGame: React.FC<GrammarGameProps> = ({
     setIsAnswerCorrect(correct);
     setHasCheckedAnswer(true);
 
-    if (correct) {
-      triggerRewardEffect(false);
-      onUpdateProgress((prev) => {
-        const lessonKey = `grammar_${activeTopic.id}`;
-        const newXp = prev.xp + 15;
-        const newLevel = Math.floor(newXp / 100) + 1;
-        return {
-          ...prev,
-          xp: newXp,
-          level: newLevel,
-          coins: prev.coins + 2,
-          completedLessons: Array.from(new Set([...prev.completedLessons, lessonKey]))
-        };
-      });
-    }
+    if (correct) awardCorrectAnswer();
   };
 
   const handleNextQuestion = () => {
