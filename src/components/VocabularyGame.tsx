@@ -244,7 +244,7 @@ export const VocabularyGame: React.FC<VocabularyGameProps> = ({
           { id: 'spelling' as VocabMode, labelEn: '3. Spell Letters', labelMl: '3. അക്ഷരം എഴുതൂ' },
           { id: 'picture' as VocabMode, labelEn: '4. Picture Word', labelMl: '4. ചിത്ര പൊരുത്തം' },
           { id: 'listen' as VocabMode, labelEn: '5. Listen & Guess', labelMl: '5. കേട്ടു പറയൂ' },
-          { id: 'explorer' as VocabMode, labelEn: 'Dictionary (52 Words)', labelMl: 'നിഘണ്ടു (52 വാക്കുകൾ)' },
+          { id: 'explorer' as VocabMode, labelEn: `Dictionary (${availableVocabulary.length} Words)`, labelMl: `നിഘണ്ടു (${availableVocabulary.length} വാക്കുകൾ)` },
         ].map((mode) => (
           <button
             key={mode.id}
