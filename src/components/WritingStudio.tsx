@@ -211,15 +211,6 @@ export const WritingStudio: React.FC<WritingStudioProps> = ({
             </p>
           </div>
 
-          {/* Malayalam Guidance Callout */}
-          <div className="p-3.5 rounded-2xl bg-amber-50/70 border border-amber-200 text-amber-950 text-xs font-malayalam flex items-start gap-2.5">
-            <Lightbulb className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-            <div>
-              <span className="font-bold mr-1">മാർഗ്ഗനിർദ്ദേശം:</span>
-              {selectedPrompt.malayalamGuidance}
-            </div>
-          </div>
-
           {/* Starter Sentence / Keywords Aid */}
           <div className="space-y-2">
             <div className="flex items-center justify-between text-xs">
