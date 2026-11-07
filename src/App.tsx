@@ -61,8 +61,6 @@ export default function App() {
       />
 
 
-      <div className="mx-4 my-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-900">Learning runs locally in this browser. Your progress is saved on this device; no account or server is required.</div>
-
       {/* Main Container */}
       <div className="flex-1 flex max-w-7xl w-full mx-auto">
         {/* Desktop Sidebar */}

@@ -47,12 +47,12 @@ export const ACHIEVEMENT_BADGES: AchievementBadge[] = [
     unlocked: false
   },
   {
-    id: 'stage_1_done',
-    titleEn: 'Foundation Master (അടിത്തറ പൂർത്തിയായി)',
-    titleMl: 'അടിത്തറ പൂർത്തിയായി',
-    descriptionEn: 'Complete all lessons in Stage 1 of the Quest Path.',
-    descriptionMl: 'ലേണിംഗ് പാതയിലെ ഒന്നാം ഘട്ടം പൂർത്തിയാക്കുക.',
-    icon: '🎓',
+    id: 'voice_master',
+    titleEn: 'Voice Master (സംസാര താരം)',
+    titleMl: 'സംസാര താരം',
+    descriptionEn: 'Complete 3 direct voice conversations in the Speaking Arena.',
+    descriptionMl: 'സ്പീക്കിംഗ് അരീനയിൽ 3 തത്സമയ സംഭാഷണങ്ങൾ പൂർത്തിയാക്കുക.',
+    icon: '🎙️',
     unlocked: false
   },
   {

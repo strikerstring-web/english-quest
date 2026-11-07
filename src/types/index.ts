@@ -59,7 +59,7 @@ export interface VocabItem {
   word: string;
   malayalam: string;
   phonetic: string;
-  category: 'Greetings' | 'Daily Life' | 'Family' | 'Food' | 'Travel' | 'Actions' | 'Places' | 'Emotions';
+  category: string;
   exampleEn: string;
   exampleMl: string;
   hint: string;
@@ -93,30 +93,6 @@ export interface GrammarTopic {
   questions: GrammarQuestion[];
 }
 
-export interface StageLesson {
-  id: string;
-  titleEn: string;
-  titleMl: string;
-  summaryEn: string;
-  summaryMl: string;
-  contentPoints: Array<{ en: string; ml: string; example?: string }>;
-  quiz: Array<{
-    questionEn: string;
-    questionMl: string;
-    options: string[];
-    correctIndex: number;
-    explanationMl: string;
-  }>;
-}
-
-export interface LearningStage {
-  id: number;
-  titleEn: string;
-  titleMl: string;
-  descriptionEn: string;
-  descriptionMl: string;
-  lessons: StageLesson[];
-}
 
 export interface SpeakingScenario {
   id: string;

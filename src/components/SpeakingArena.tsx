@@ -12,17 +12,20 @@ import { triggerRewardEffect } from '../utils/storage';
 import { 
   Mic, 
   MicOff, 
-  Send, 
   Volume2, 
   Sparkles, 
   RotateCcw, 
   AlertCircle, 
   CheckCircle2, 
-  HelpCircle,
-  Award,
-  BookOpen,
+  Award, 
+  PhoneCall, 
+  PhoneOff, 
+  Radio, 
+  Info, 
+  Languages, 
   ChevronRight,
-  Info
+  BookOpen,
+  VolumeX
 } from 'lucide-react';
 
 interface SpeakingArenaProps {
@@ -30,60 +33,12 @@ interface SpeakingArenaProps {
   onUpdateProgress: (updater: (prev: UserProgress) => UserProgress) => void;
 }
 
-interface ChatMessage {
+interface SpokenTurn {
   id: string;
-  sender: 'ai' | 'user';
+  speaker: 'ai' | 'user';
   text: string;
-  malayalamExplanation?: string;
-  suggestedReplies?: string[];
+  malayalamTranslation?: string;
   timestamp: string;
-}
-
-type LocalReply = { reply: string; malayalam: string; suggestions: string[] };
-
-function createLocalConversationReply(userText: string, scenario: SpeakingScenario, turn: number): LocalReply {
-  const text = userText.toLowerCase();
-  const name = text.match(/my name is ([a-z]+)/)?.[1];
-  const templates: Array<{ test: RegExp; replies: string[]; ml: string; suggestions: string[] }> = [
-    { test: /\b(name|called)\b/, replies: [`Nice to meet you, ${name ? name[0].toUpperCase()+name.slice(1) : 'my friend'}! What do you enjoy doing?`, 'That is a lovely name. Which place are you from?'], ml: 'നിങ്ങളെ പരിചയപ്പെട്ടതിൽ സന്തോഷം! നിങ്ങൾക്ക് എന്താണ് ചെയ്യാൻ ഇഷ്ടം?', suggestions: ['I enjoy reading books.', 'I am from Kerala.', 'I like learning English.'] },
-    { test: /\b(father|mother|brother|sister|family|parents)\b/, replies: ['That sounds nice. What do you usually do together?', 'Tell me a little more about your family.'], ml: 'അത് സന്തോഷകരമാണ്. നിങ്ങൾ കുടുംബത്തോടൊപ്പം സാധാരണ എന്താണ് ചെയ്യാറുള്ളത്?', suggestions: ['We spend time together.', 'We visit our relatives.', 'I help my parents at home.'] },
-    { test: /\b(college|school|class|teacher|study|student|course)\b/, replies: ['What subject do you like the most?', 'What is one thing you learned recently?'], ml: 'നിങ്ങൾക്ക് ഏറ്റവും ഇഷ്ടമുള്ള വിഷയം ഏതാണ്? അടുത്തിടെ പഠിച്ച ഒരു കാര്യം പറയാമോ?', suggestions: ['I like English.', 'My favourite subject is science.', 'I enjoy learning new things.'] },
-    { test: /\b(food|eat|rice|tea|coffee|restaurant|hungry)\b/, replies: ['That sounds delicious! Do you like cooking too?', 'What food would you recommend to a visitor?'], ml: 'അത് രുചികരമാണെന്ന് തോന്നുന്നു! നിങ്ങൾക്ക് പാചകം ചെയ്യാനും ഇഷ്ടമാണോ?', suggestions: ['I like biryani.', 'I sometimes cook at home.', 'My favourite food is dosa.'] },
-    { test: /\b(shop|buy|price|cost|money|size|colour|color)\b/, replies: ['Would you like to compare another option?', 'What is most important to you: price, quality, or size?'], ml: 'മറ്റൊരു സാധനവുമായി താരതമ്യം ചെയ്യണോ? വില, ഗുണമേന്മ, വലുപ്പം എന്നിവയിൽ ഏതാണ് പ്രധാന്യം?', suggestions: ['I prefer good quality.', 'How much does it cost?', 'Do you have another colour?'] },
-    { test: /\b(friend|meet|hello|hi|good morning|how are you)\b/, replies: ['I am doing well, thank you! What do you like to do in your free time?', 'It is great to meet you. How was your day?'], ml: 'എനിക്ക് സുഖമാണ്, നന്ദി! ഒഴിവുസമയത്ത് എന്താണ് ചെയ്യാൻ ഇഷ്ടം?', suggestions: ['I like reading.', 'My day was good.', 'I enjoy playing football.'] },
-    { test: /\b(work|job|office|business)\b/, replies: ['What do you like most about your work?', 'What skills would you like to improve?'], ml: 'നിങ്ങളുടെ ജോലിയിൽ ഏറ്റവും ഇഷ്ടമുള്ള കാര്യം എന്താണ്? മെച്ചപ്പെടുത്താൻ ആഗ്രഹിക്കുന്ന കഴിവുകൾ ഏതൊക്കെയാണ്?', suggestions: ['I enjoy working with people.', 'I want to improve my communication.', 'I am learning new skills.'] },
-    { test: /\b(travel|trip|visit|place|holiday|journey)\b/, replies: ['That sounds exciting! What would you like to see there?', 'Who would you like to travel with?'], ml: 'അത് ആവേശകരമാണ്! അവിടെ എന്താണ് കാണാൻ ആഗ്രഹിക്കുന്നത്?', suggestions: ['I want to visit new places.', 'I like travelling with friends.', 'I enjoy nature.'] },
-    { test: /\b(happy|sad|excited|nervous|tired|feel)\b/, replies: ['Thank you for sharing that. What made you feel this way?', 'I understand. What usually helps you feel better?'], ml: 'നിങ്ങളുടെ അനുഭവം പങ്കുവെച്ചതിന് നന്ദി. ഇങ്ങനെ തോന്നാൻ കാരണമെന്താണ്?', suggestions: ['I feel happy today.', 'I feel better now.', 'I want to stay positive.'] }
-  ];
-  const matched = templates.find((item) => item.test.test(text));
-  const generic = [
-    { reply: 'That is interesting. Could you explain a little more?', malayalam: 'അത് രസകരമാണ്. കുറച്ചുകൂടി വിശദീകരിക്കാമോ?', suggestions: ['I think it is useful.', 'Can you give an example?', 'I want to learn more.'] },
-    { reply: 'I see what you mean. Can you tell me why you think so?', malayalam: 'നിങ്ങൾ പറയുന്നത് മനസ്സിലായി. അങ്ങനെ ചിന്തിക്കാൻ കാരണം പറയാമോ?', suggestions: ['Because it is important.', 'It helps me every day.', 'That is my experience.'] },
-    { reply: 'Good answer! Can you share an example from your daily life?', malayalam: 'നല്ല മറുപടി! നിങ്ങളുടെ ദൈനംദിന ജീവിതത്തിൽ നിന്നൊരു ഉദാഹരണം പറയാമോ?', suggestions: ['For example, I practise daily.', 'I do it with my friends.', 'I learned it recently.'] }
-  ];
-  if (matched) return { reply: matched.replies[turn % matched.replies.length], malayalam: matched.ml, suggestions: matched.suggestions };
-  return generic[turn % generic.length];
-}
-
-function createLocalSpeakingFeedback(messages: ChatMessage[], isMl: boolean): SpeakingFeedbackData {
-  const userMessages = messages.filter((message) => message.sender === 'user');
-  const text = userMessages.map((message) => message.text).join(' ');
-  const words = text.trim().split(/\s+/).filter(Boolean);
-  const uniqueWords = new Set(words.map((word) => word.toLowerCase().replace(/[^a-z']/g, '')));
-  const hasConnectors = /\b(and|but|because|so|also|when|although)\b/i.test(text);
-  const hasCompleteSentences = /\b(i am|i have|i like|i want|i can|we are|it is|there is|my)\b/i.test(text);
-  const score = Math.max(35, Math.min(98, 50 + Math.min(userMessages.length * 5, 15) + Math.min(uniqueWords.size, 20) + (hasConnectors ? 7 : 0) + (hasCompleteSentences ? 6 : 0)));
-  const sample = userMessages.find((message) => message.text.trim())?.text || 'I want to improve my English.';
-  return {
-    overallScore: score,
-    grammarFeedback: hasCompleteSentences ? 'You used some complete sentence patterns. Keep checking subject–verb agreement and verb tense.' : 'Try forming complete sentences with a subject and a verb, such as “I study English every day.”',
-    vocabularyFeedback: uniqueWords.size >= 12 ? 'You used a varied set of words. Try adding precise adjectives and topic-specific vocabulary.' : 'Your vocabulary is understandable. Learn a few new words for each topic and use them in complete sentences.',
-    sentenceImprovement: sample.length > 90 ? 'Break long ideas into two clear sentences and connect them with because, but, or so.' : 'Try adding one reason or detail to make your answer more informative.',
-    fluencyTip: 'Speak in short groups of words, pause naturally, and repeat the corrected sentence aloud. Browser speech recognition may make transcription mistakes.',
-    malayalamSummary: isMl ? 'ഇത് നിങ്ങളുടെ ടൈപ്പ് ചെയ്തതോ ശബ്ദത്തിൽ നിന്ന് തിരിച്ചറിഞ്ഞതോ ആയ വാക്കുകളെ അടിസ്ഥാനമാക്കിയുള്ള പ്രാദേശിക പരിശീലന വിലയിരുത്തലാണ്. കൂടുതൽ വാക്കുകളും പൂർണ്ണവാക്യങ്ങളും ഉപയോഗിച്ച് പരിശീലിക്കുക.' : 'This is an on-device practice estimate based on your transcript, not an AI or pronunciation assessment. Keep practising complete sentences and varied vocabulary.',
-    suggestedPractice: ['I would like to explain my idea.', 'I enjoy learning something new every day.', 'I think this is useful because it helps me.'],
-    transcriptionNote: 'This score is generated locally from your text transcript. It does not measure accent, pronunciation, or actual speaking fluency.'
-  };
 }
 
 interface SpeakingFeedbackData {
@@ -97,6 +52,130 @@ interface SpeakingFeedbackData {
   transcriptionNote: string;
 }
 
+type LocalReply = { reply: string; malayalam: string; suggestions: string[] };
+
+function createLocalConversationReply(userText: string, scenario: SpeakingScenario, turn: number): LocalReply {
+  const text = userText.toLowerCase();
+  const name = text.match(/my name is ([a-z]+)/)?.[1];
+  const templates: Array<{ test: RegExp; replies: string[]; ml: string; suggestions: string[] }> = [
+    { 
+      test: /\b(name|called|myself)\b/, 
+      replies: [
+        `Nice to meet you, ${name ? name[0].toUpperCase() + name.slice(1) : 'my friend'}! Where are you from in Kerala?`,
+        'That is a wonderful name! What do you like to do every day?'
+      ], 
+      ml: 'നിങ്ങളെ പരിചയപ്പെട്ടതിൽ സന്തോഷം! കേരളത്തിൽ എവിടെ നിന്നാണ് വരുന്നത്?', 
+      suggestions: ['I am from Kochi.', 'I live in Kozhikode.', 'I enjoy learning English every day.'] 
+    },
+    { 
+      test: /\b(father|mother|brother|sister|family|parents|home)\b/, 
+      replies: [
+        'That sounds wonderful. Tell me more about your family members!',
+        'Family is so special. What do you usually do together on weekends?'
+      ], 
+      ml: 'വളരെ നല്ലത്. നിങ്ങളുടെ കുടുംബാംഗങ്ങളെക്കുറിച്ച് കൂടുതൽ പറയാമോ?', 
+      suggestions: ['There are four members in my family.', 'My mother is a good cook.', 'We spend time together on Sundays.'] 
+    },
+    { 
+      test: /\b(college|school|class|teacher|study|student|course|learn)\b/, 
+      replies: [
+        'That is great! What is your favourite subject to study?',
+        'Education is very important. What are you planning to do after your studies?'
+      ], 
+      ml: 'അത് കൊള്ളാം! നിങ്ങൾക്ക് ഏറ്റവും ഇഷ്ടപ്പെട്ട വിഷയം ഏതാണ്?', 
+      suggestions: ['I like English and science.', 'I am studying for my exams.', 'My teachers are very helpful.'] 
+    },
+    { 
+      test: /\b(food|eat|rice|tea|coffee|curry|hungry|lunch|breakfast)\b/, 
+      replies: [
+        'Delicious! Kerala food is famous. Do you enjoy cooking or trying new dishes?',
+        'Hot tea is the best! What is your favourite dish to eat with family?'
+      ], 
+      ml: 'രുചികരമായ ഭക്ഷണം! നിങ്ങൾക്ക് പാചകം ചെയ്യാനും ഇഷ്ടമാണോ?', 
+      suggestions: ['I love hot Kerala tea.', 'My favourite food is biryani.', 'I eat rice and curry for lunch.'] 
+    },
+    { 
+      test: /\b(shop|buy|price|cost|money|rupees|packet|store|market)\b/, 
+      replies: [
+        'Certainly! We have fresh items today. Would you like to check the smaller size?',
+        'That costs 50 rupees. Would you like to pay with cash or Google Pay?'
+      ], 
+      ml: 'തീർച്ചയായും! ഇതിന് 50 രൂപയാണ് വില. പണമായി നൽകണോ അതോ GPay ചെയ്യണോ?', 
+      suggestions: ['How much does this cost?', 'Can I pay using Google Pay?', 'Do you have another colour?'] 
+    },
+    { 
+      test: /\b(direction|way|road|station|bus|hospital|where|far)\b/, 
+      replies: [
+        'Go straight along this road and take the first left turn. It is just 5 minutes away!',
+        'Yes, it is very close! Walk past the traffic signal and you will see it.'
+      ], 
+      ml: 'ഈ വഴി നേരെ പോയി ആദ്യത്തെ ഇടത്തേക്ക് തിരിയുക. വെറും 5 മിനിറ്റ് ദൂരമേ ഉള്ളൂ!', 
+      suggestions: ['Is the bus stop near here?', 'How far is the railway station?', 'Thank you for your guidance.'] 
+    },
+    { 
+      test: /\b(wake|morning|routine|evening|night|sleep|work|daily)\b/, 
+      replies: [
+        'A good daily routine keeps you healthy and energetic. What do you do in the evening?',
+        'Waking up early is great! Do you like to go for morning walks?'
+      ], 
+      ml: 'നല്ലൊരു ദിനചര്യ ആരോഗ്യത്തിന് നല്ലതാണ്. വൈകുന്നേരം എന്താണ് ചെയ്യാറുള്ളത്?', 
+      suggestions: ['I wake up at six in the morning.', 'I go for an evening walk.', 'I sleep early at night.'] 
+    }
+  ];
+
+  const matched = templates.find((item) => item.test.test(text));
+  const generic = [
+    { 
+      reply: 'That is very interesting! Could you tell me a little more about that?', 
+      malayalam: 'അത് വളരെ രസകരമാണ്! അതിനെക്കുറിച്ച് കുറച്ചുകൂടി പറയാമോ?', 
+      suggestions: ['Yes, I would be happy to explain.', 'It helps me improve my English.', 'I enjoy this very much.'] 
+    },
+    { 
+      reply: 'You are speaking clearly! How do you feel about practicing English today?', 
+      malayalam: 'നിങ്ങൾ വ്യക്തമായി സംസാരിക്കുന്നുണ്ട്! ഇന്ന് ഇംഗ്ലീഷ് സംസാരിക്കുമ്പോൾ എന്ത് തോന്നുന്നു?', 
+      suggestions: ['I feel happy and confident.', 'I want to speak fluently.', 'Thank you for helping me.'] 
+    },
+    { 
+      reply: 'Great answer! What is something new you learned recently?', 
+      malayalam: 'നല്ല മറുപടി! അടുത്തിടെ നിങ്ങൾ പഠിച്ച പുതിയൊരു കാര്യം എന്താണ്?', 
+      suggestions: ['I learned many new words.', 'I am practicing short sentences.', 'I speak English every day.'] 
+    }
+  ];
+
+  if (matched) return { reply: matched.replies[turn % matched.replies.length], malayalam: matched.ml, suggestions: matched.suggestions };
+  return generic[turn % generic.length];
+}
+
+function createLocalSpeakingFeedback(history: SpokenTurn[], isMl: boolean): SpeakingFeedbackData {
+  const userTurns = history.filter((turn) => turn.speaker === 'user');
+  const allWords = userTurns.map((t) => t.text).join(' ').trim().split(/\s+/).filter(Boolean);
+  const uniqueWords = new Set(allWords.map((w) => w.toLowerCase().replace(/[^a-z']/g, '')));
+  
+  const score = Math.max(55, Math.min(96, 60 + Math.min(userTurns.length * 8, 20) + Math.min(uniqueWords.size * 2, 16)));
+  const sample = userTurns[0]?.text || 'I want to speak English fluently.';
+
+  return {
+    overallScore: score,
+    grammarFeedback: userTurns.length >= 2 
+      ? 'Good subject-verb usage! Continue focusing on clear pronouns (He, She, They) and prepositions (to, in, at).'
+      : 'Try expanding your speech into complete sentences like "I am from Kerala" instead of one-word answers.',
+    vocabularyFeedback: uniqueWords.size >= 8
+      ? 'You used a good set of natural conversational words suitable for everyday dialogues.'
+      : 'Great start! Practice incorporating everyday action words into your conversation.',
+    sentenceImprovement: `Instead of "${sample}", try saying: "${sample.endsWith('.') ? sample : sample + '.'} It is very enjoyable to speak English."`,
+    fluencyTip: 'Practice speaking in short, relaxed breath groups. Repeat each spoken answer twice to build effortless confidence.',
+    malayalamSummary: isMl 
+      ? 'വളരെ നല്ല സംഭാഷണ മുന്നേറ്റം! ദിവസവും ഏതാനും മിനിറ്റുകൾ ഉറക്കെ സംസാരിച്ച് ശീലിക്കുന്നത് വഴി സംസാരത്തിലെ മടി പൂർണ്ണമായും മാറും.'
+      : 'Excellent speaking session! Practicing aloud daily will build automatic conversational confidence and smooth fluency.',
+    suggestedPractice: [
+      'I am speaking English with confidence today.',
+      'Could you please tell me more about that?',
+      'Thank you, I really enjoyed our conversation.'
+    ],
+    transcriptionNote: 'This practice diagnostic is based on speech recognition transcription. Focus on relaxed, natural pronunciation.'
+  };
+}
+
 export const SpeakingArena: React.FC<SpeakingArenaProps> = ({
   progress,
   onUpdateProgress,
@@ -104,69 +183,125 @@ export const SpeakingArena: React.FC<SpeakingArenaProps> = ({
   const isMl = progress.lang === 'ml';
 
   const [selectedScenario, setSelectedScenario] = useState<SpeakingScenario>(SPEAKING_SCENARIOS[0]);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [inputText, setInputText] = useState<string>('');
+  
+  // Call session states
+  const [callDuration, setCallDuration] = useState<number>(0);
+  const [isCallActive, setIsCallActive] = useState<boolean>(true);
+  const [isAISpeaking, setIsAISpeaking] = useState<boolean>(false);
   const [isRecording, setIsRecording] = useState<boolean>(false);
-  const [recordingError, setRecordingError] = useState<string | null>(null);
-  const [isLoadingAI, setIsLoadingAI] = useState<boolean>(false);
-  const [expandedMlIds, setExpandedMlIds] = useState<Record<string, boolean>>({});
-  const [audioPlayingId, setAudioPlayingId] = useState<string | null>(null);
+  const [liveTranscript, setLiveTranscript] = useState<string>('');
+  const [micError, setMicError] = useState<string | null>(null);
+  const [showMalayalamExplanation, setShowMalayalamExplanation] = useState<boolean>(true);
+  
+  // Conversation History
+  const [conversationTurns, setConversationTurns] = useState<SpokenTurn[]>([]);
+  const [currentAIReply, setCurrentAIReply] = useState<{
+    text: string;
+    malayalam: string;
+    suggestions: string[];
+  }>({
+    text: selectedScenario.starterMessageEn,
+    malayalam: selectedScenario.starterMessageMl,
+    suggestions: selectedScenario.suggestedStarters
+  });
 
-  // Feedback report state
+  // Diagnostic feedback modal state
   const [isGeneratingFeedback, setIsGeneratingFeedback] = useState<boolean>(false);
   const [feedbackReport, setFeedbackReport] = useState<SpeakingFeedbackData | null>(null);
 
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  // Initialize scenario conversation
+  // Timer for call duration
   useEffect(() => {
-    const starterMsg: ChatMessage = {
-      id: 'msg_0',
-      sender: 'ai',
-      text: selectedScenario.starterMessageEn,
-      malayalamExplanation: selectedScenario.starterMessageMl,
-      suggestedReplies: selectedScenario.suggestedStarters,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    };
-    setMessages([starterMsg]);
-    setExpandedMlIds({ msg_0: true }); // Open first Malayalam translation for convenience
+    let interval: any = null;
+    if (isCallActive) {
+      interval = setInterval(() => {
+        setCallDuration((prev) => prev + 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [isCallActive]);
+
+  // Initial greeting when scenario changes
+  useEffect(() => {
+    stopSpeech();
+    stopSpeechRecognition();
+    setIsRecording(false);
+    setLiveTranscript('');
+    setCallDuration(0);
+    setIsCallActive(true);
     setFeedbackReport(null);
-    setInputText('');
+
+    const initialAI = {
+      text: selectedScenario.starterMessageEn,
+      malayalam: selectedScenario.starterMessageMl,
+      suggestions: selectedScenario.suggestedStarters
+    };
+    setCurrentAIReply(initialAI);
+    setConversationTurns([
+      {
+        id: `turn_0`,
+        speaker: 'ai',
+        text: initialAI.text,
+        malayalamTranslation: initialAI.malayalam,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      }
+    ]);
+
+    // Speak initial AI line
+    setIsAISpeaking(true);
+    speakText(initialAI.text, 'en-US', () => {
+      setIsAISpeaking(false);
+    });
   }, [selectedScenario]);
 
-  // Scroll to bottom on new message
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isLoadingAI]);
-
-  // Handle Play English Audio
-  const handlePlayAudio = (text: string, id: string) => {
-    setAudioPlayingId(id);
-    speakText(text, 'en-US', () => setAudioPlayingId(null));
+  // Format call timer (mm:ss)
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Toggle speech recording
-  const handleToggleRecord = () => {
+  // Play / Replay current AI line
+  const handleReplayAI = () => {
+    stopSpeech();
+    setIsAISpeaking(true);
+    speakText(currentAIReply.text, 'en-US', () => {
+      setIsAISpeaking(false);
+    });
+  };
+
+  // Toggle user voice recording
+  const handleToggleMic = () => {
+    if (isAISpeaking) {
+      stopSpeech();
+      setIsAISpeaking(false);
+    }
+
     if (isRecording) {
       stopSpeechRecognition();
       setIsRecording(false);
+      if (liveTranscript.trim()) {
+        processUserSpeech(liveTranscript.trim());
+      }
       return;
     }
 
-    setRecordingError(null);
-    const stopFn = startSpeechRecognition({
+    setMicError(null);
+    setLiveTranscript('');
+    
+    startSpeechRecognition({
       onStart: () => {
         setIsRecording(true);
       },
       onResult: (transcript: string, isFinal: boolean) => {
-        setInputText(transcript);
-        if (isFinal) {
+        setLiveTranscript(transcript);
+        if (isFinal && transcript.trim()) {
           setIsRecording(false);
+          processUserSpeech(transcript.trim());
         }
       },
       onError: (err: string) => {
         setIsRecording(false);
-        setRecordingError(err);
+        setMicError(err);
       },
       onEnd: () => {
         setIsRecording(false);
@@ -174,148 +309,117 @@ export const SpeakingArena: React.FC<SpeakingArenaProps> = ({
     });
   };
 
-  // Send message
-  const handleSendMessage = async (textToSend?: string) => {
-    const messageContent = (textToSend || inputText).trim();
-    if (!messageContent || isLoadingAI) return;
+  // Process user speech and get immediate AI voice reply
+  const processUserSpeech = (spokenText: string) => {
+    if (!spokenText.trim()) return;
 
+    const userTurn: SpokenTurn = {
+      id: `turn_${Date.now()}`,
+      speaker: 'user',
+      text: spokenText,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+
+    const updatedHistory = [...conversationTurns, userTurn];
+    setConversationTurns(updatedHistory);
+    setLiveTranscript('');
+
+    // Generate response
+    const replyTurnIndex = updatedHistory.filter((t) => t.speaker === 'user').length;
+    const aiResponse = createLocalConversationReply(spokenText, selectedScenario, replyTurnIndex);
+
+    const aiTurn: SpokenTurn = {
+      id: `turn_${Date.now() + 1}`,
+      speaker: 'ai',
+      text: aiResponse.reply,
+      malayalamTranslation: aiResponse.malayalam,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+
+    setCurrentAIReply({
+      text: aiResponse.reply,
+      malayalam: aiResponse.malayalam,
+      suggestions: aiResponse.suggestions
+    });
+    setConversationTurns([...updatedHistory, aiTurn]);
+
+    // Speak aloud automatically
+    setIsAISpeaking(true);
+    speakText(aiResponse.reply, 'en-US', () => {
+      setIsAISpeaking(false);
+    });
+
+    // Update progress minutes and XP
+    onUpdateProgress((prev) => ({
+      ...prev,
+      speakingMinutes: prev.speakingMinutes + 1,
+      xp: prev.xp + 15,
+      level: Math.floor((prev.xp + 15) / 100) + 1
+    }));
+  };
+
+  // Beginner prompt suggestion tapped
+  const handleSelectSuggestedReply = (suggestedPhrase: string) => {
     if (isRecording) {
       stopSpeechRecognition();
       setIsRecording(false);
     }
-
-    const userMsg: ChatMessage = {
-      id: `user_${Date.now()}`,
-      sender: 'user',
-      text: messageContent,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    };
-
-    const updatedMessages = [...messages, userMsg];
-    setMessages(updatedMessages);
-    setInputText('');
-    setIsLoadingAI(true);
-
-    try {
-      const { reply: aiReply, malayalam: aiMl, suggestions: aiSuggestions } =
-        createLocalConversationReply(messageContent, selectedScenario, updatedMessages.filter((m) => m.sender === 'user').length);
-
-      const aiMsg: ChatMessage = {
-        id: `ai_${Date.now()}`,
-        sender: 'ai',
-        text: aiReply,
-        malayalamExplanation: aiMl,
-        suggestedReplies: aiSuggestions,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      };
-
-      setMessages((prev) => [...prev, aiMsg]);
-      // Play AI speech automatically for interactive feel
-      handlePlayAudio(aiReply, aiMsg.id);
-
-      // Track speaking practice minutes (+1 min every 2 turns)
-      onUpdateProgress((prev) => ({
-        ...prev,
-        speakingMinutes: prev.speakingMinutes + 1,
-        xp: prev.xp + 10,
-        level: Math.floor((prev.xp + 10) / 100) + 1
-      }));
-    } catch (e: any) {
-      console.error('Failed to get conversation response:', e);
-      setRecordingError(e?.message || (isMl
-        ? 'AI സംഭാഷണം ഇപ്പോൾ ലഭ്യമല്ല. കുറച്ച് കഴിഞ്ഞ് വീണ്ടും ശ്രമിക്കുക.'
-        : 'AI conversation is currently unavailable. Please try again shortly.'));
-    } finally {
-      setIsLoadingAI(false);
-    }
+    processUserSpeech(suggestedPhrase);
   };
 
-  // Generate diagnostic feedback report
-  const handleEndSessionAndGetFeedback = async () => {
+  // End Call & View Diagnostic Feedback
+  const handleEndCall = () => {
+    stopSpeech();
+    stopSpeechRecognition();
+    setIsRecording(false);
+    setIsAISpeaking(false);
+    setIsCallActive(false);
+
     setIsGeneratingFeedback(true);
-    try {
-      const data = createLocalSpeakingFeedback(messages, isMl);
-      setFeedbackReport(data);
-      triggerRewardEffect(true);
+    const feedback = createLocalSpeakingFeedback(conversationTurns, isMl);
+    setFeedbackReport(feedback);
+    triggerRewardEffect(true);
 
-      // Save speaking history entry
-      onUpdateProgress((prev) => {
-        const historyEntry = {
-          id: `speak_${Date.now()}`,
-          date: new Date().toLocaleDateString(),
-          scenarioTitle: selectedScenario.titleEn,
-          score: data.overallScore || 80,
-          turnsCount: messages.filter((m) => m.sender === 'user').length
-        };
-        const newXp = prev.xp + 30;
-        const newLevel = Math.floor(newXp / 100) + 1;
-        return {
-          ...prev,
-          xp: newXp,
-          level: newLevel,
-          coins: prev.coins + 10,
-          speakingHistory: [historyEntry, ...prev.speakingHistory].slice(0, 20)
-        };
-      });
-    } catch (e: any) {
-      console.error('Failed to get feedback report:', e);
-      setFeedbackReport(null);
-      setRecordingError(e?.message || (isMl
-        ? 'സംസാര വിലയിരുത്തൽ ഇപ്പോൾ ലഭ്യമല്ല. വീണ്ടും ശ്രമിക്കുക.'
-        : 'Speaking assessment is currently unavailable. Please try again.'));
-    } finally {
-      setIsGeneratingFeedback(false);
-    }
+    onUpdateProgress((prev) => {
+      const entry = {
+        id: `speak_${Date.now()}`,
+        date: new Date().toLocaleDateString(),
+        scenarioTitle: selectedScenario.titleEn,
+        score: feedback.overallScore,
+        turnsCount: conversationTurns.filter((t) => t.speaker === 'user').length
+      };
+      const newXp = prev.xp + 30;
+      const newLevel = Math.floor(newXp / 100) + 1;
+      return {
+        ...prev,
+        xp: newXp,
+        level: newLevel,
+        coins: prev.coins + 10,
+        speakingHistory: [entry, ...prev.speakingHistory].slice(0, 20)
+      };
+    });
+    setIsGeneratingFeedback(false);
   };
+
+  const userSpokenTurnsCount = conversationTurns.filter((t) => t.speaker === 'user').length;
 
   return (
-    <div className="space-y-6 pb-12 animate-fade-in">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
-        <div>
-          <span className="text-xs font-bold uppercase tracking-wider text-[#4F7CFF] bg-blue-50 px-2.5 py-1 rounded-lg">
-            {isMl ? 'സംഭാഷണ പരിശീലന പങ്കാളി' : 'Conversation Practice Partner'}
-          </span>
-          <h1 className="text-2xl font-black text-slate-900 mt-2">
-            {isMl ? 'സ്പീക്കിംഗ് അരീന (Speaking Arena)' : 'Speaking Arena'}
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-600 font-malayalam mt-1">
-            {isMl
-              ? 'മൈക്രോഫോണിലൂടെയോ എഴുതിയോ ഇംഗ്ലീഷിൽ സംസാരിക്കാം. ഓരോ വാക്യത്തിനും മലയാള തർജ്ജമയും ലഭിക്കും.'
-              : 'Practise with guided replies, audio pronunciation, Malayalam translations, and instant local feedback.'}
-          </p>
-        </div>
-
-        {/* End Session CTA */}
-        <button
-          onClick={handleEndSessionAndGetFeedback}
-          disabled={messages.filter((m) => m.sender === 'user').length === 0 || isGeneratingFeedback}
-          className={`px-4 py-2.5 rounded-2xl font-bold text-xs flex items-center gap-2 shadow-sm transition-all shrink-0 ${
-            messages.filter((m) => m.sender === 'user').length > 0
-              ? 'bg-[#37D6A0] hover:bg-[#2ec28f] text-slate-950 active:scale-95'
-              : 'bg-slate-100 text-slate-400 cursor-not-allowed'
-          }`}
-        >
-          <Award className="w-4 h-4" />
-          <span>{isGeneratingFeedback ? (isMl ? 'വിലയിരുത്തുന്നു...' : 'Analyzing...') : (isMl ? 'പരിശീലന ഫലം കാണുക' : 'Get Practice Feedback')}</span>
-        </button>
-      </div>
-
-      {/* Scenario Selector Horizontal Carousel */}
-      <div className="flex items-center gap-2.5 overflow-x-auto pb-2 scrollbar-none">
+    <div className="space-y-6 pb-12 animate-fade-in max-w-4xl mx-auto">
+      {/* Scenario Ribbon */}
+      <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-xs flex items-center gap-2 overflow-x-auto scrollbar-none">
         {SPEAKING_SCENARIOS.map((sc) => {
           const isSelected = selectedScenario.id === sc.id;
           return (
             <button
               key={sc.id}
               onClick={() => setSelectedScenario(sc)}
-              className={`px-4 py-2.5 rounded-2xl border text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap shrink-0 ${
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap shrink-0 ${
                 isSelected
-                  ? 'border-[#4F7CFF] bg-blue-50/90 text-[#4F7CFF] shadow-sm ring-2 ring-[#4F7CFF]/20'
-                  : 'border-slate-200 bg-white hover:border-slate-300 text-slate-700'
+                  ? 'bg-slate-900 text-white shadow-sm'
+                  : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200/60'
               }`}
             >
-              <span className="text-base">{sc.emoji}</span>
+              <span>{sc.emoji}</span>
               <span className={isMl ? 'font-malayalam' : ''}>
                 {isMl ? sc.titleMl : sc.titleEn}
               </span>
@@ -324,209 +428,225 @@ export const SpeakingArena: React.FC<SpeakingArenaProps> = ({
         })}
       </div>
 
-      {/* Active Conversation Container */}
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm flex flex-col h-[560px] overflow-hidden">
-        {/* Scenario Header Bar */}
-        <div className="px-6 py-3.5 border-b border-slate-100 bg-slate-50/70 flex items-center justify-between">
+      {/* DIRECT VOICE CONVERSATION INTERFACE */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-slate-900 via-[#111827] to-slate-950 text-white border border-slate-800 shadow-2xl p-6 sm:p-10 flex flex-col items-center justify-between min-h-[580px]">
+        {/* Top Call Info Bar */}
+        <div className="w-full flex items-center justify-between border-b border-white/10 pb-4">
           <div className="flex items-center gap-3">
-            <span className="text-2xl">{selectedScenario.emoji}</span>
+            <div className="w-3 h-3 rounded-full bg-emerald-400 animate-ping" />
             <div>
-              <h3 className="font-bold text-sm text-slate-900">
-                {isMl ? selectedScenario.titleMl : selectedScenario.titleEn}
-              </h3>
-              <p className="text-[11px] text-slate-500 font-malayalam">
-                {isMl ? selectedScenario.partnerRoleMl : selectedScenario.partnerRoleEn}
-              </p>
-            </div>
-          </div>
-
-          <div className="text-[11px] text-slate-400 font-medium">
-            {messages.filter((m) => m.sender === 'user').length} {isMl ? 'മറുപടികൾ' : 'turns'}
-          </div>
-        </div>
-
-        {/* Messages Feed */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
-          {messages.map((msg) => {
-            const isAI = msg.sender === 'ai';
-            const isMlExpanded = !!expandedMlIds[msg.id];
-
-            return (
-              <div
-                key={msg.id}
-                className={`flex flex-col ${isAI ? 'items-start' : 'items-end'} animate-fade-in`}
-              >
-                <div
-                  className={`max-w-[85%] sm:max-w-[75%] rounded-3xl p-4 sm:p-5 space-y-2 shadow-xs ${
-                    isAI
-                      ? 'bg-slate-100/90 text-slate-900 rounded-tl-sm'
-                      : 'bg-[#4F7CFF] text-white rounded-tr-sm'
-                  }`}
-                >
-                  {/* Message Text with Audio Button */}
-                  <div className="flex items-start justify-between gap-3">
-                    <p className="text-sm sm:text-base leading-relaxed font-medium">
-                      {msg.text}
-                    </p>
-                    <button
-                      onClick={() => handlePlayAudio(msg.text, msg.id)}
-                      className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 transition-transform active:scale-90 ${
-                        isAI
-                          ? 'bg-white hover:bg-slate-200 text-slate-700'
-                          : 'bg-white/20 hover:bg-white/30 text-white'
-                      }`}
-                      title="Listen audio / ഉച്ചാരണം കേൾക്കാം"
-                    >
-                      <Volume2 className={`w-3.5 h-3.5 ${audioPlayingId === msg.id ? 'animate-pulse' : ''}`} />
-                    </button>
-                  </div>
-
-                  {/* Malayalam translation collapsible for AI messages */}
-                  {isAI && msg.malayalamExplanation && (
-                    <div className="pt-2 border-t border-slate-200/70">
-                      <button
-                        onClick={() =>
-                          setExpandedMlIds((prev) => ({ ...prev, [msg.id]: !prev[msg.id] }))
-                        }
-                        className="text-[11px] font-bold text-[#4F7CFF] hover:underline flex items-center gap-1 font-malayalam"
-                      >
-                        <Sparkles className="w-3 h-3" />
-                        <span>
-                          {isMlExpanded ? 'മലയാളം ഒളിപ്പിക്കുക' : 'മലയാളം തർജ്ജമ കാണുക'}
-                        </span>
-                      </button>
-
-                      {isMlExpanded && (
-                        <p className="text-xs text-slate-600 font-malayalam mt-1.5 leading-relaxed bg-white/70 p-2.5 rounded-xl border border-slate-200/50">
-                          {msg.malayalamExplanation}
-                        </p>
-                      )}
-                    </div>
-                  )}
-
-                  <div className={`text-[10px] text-right font-mono ${isAI ? 'text-slate-400' : 'text-blue-100'}`}>
-                    {msg.timestamp}
-                  </div>
-                </div>
-
-                {/* Suggested Reply Chips for beginners */}
-                {isAI && msg.suggestedReplies && msg.suggestedReplies.length > 0 && (
-                  <div className="mt-2 space-y-1 max-w-[85%]">
-                    <span className="text-[11px] font-bold text-slate-400 font-malayalam block pl-1">
-                      {isMl ? 'തുടക്കക്കാർക്കുള്ള നിർദ്ദേശങ്ങൾ (Tap to reply):' : 'Suggested responses for beginners:'}
-                    </span>
-                    <div className="flex flex-wrap gap-1.5">
-                      {msg.suggestedReplies.map((reply, rIdx) => (
-                        <button
-                          key={rIdx}
-                          onClick={() => handleSendMessage(reply)}
-                          className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:border-[#4F7CFF] hover:bg-blue-50/50 text-slate-700 hover:text-[#4F7CFF] text-xs font-medium text-left transition-all active:scale-95 shadow-xs"
-                        >
-                          "{reply}"
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
+              <div className="flex items-center gap-2 text-xs font-bold tracking-wider uppercase text-emerald-400">
+                <Radio className="w-3.5 h-3.5" />
+                <span>{isMl ? 'തത്സമയ സംഭാഷണം (Live Voice Call)' : 'Live Voice Call'}</span>
               </div>
-            );
-          })}
-
-          {/* AI Thinking Animation */}
-          {isLoadingAI && (
-            <div className="flex items-center gap-2 p-3 bg-slate-50 text-slate-400 rounded-2xl w-fit text-xs animate-pulse">
-              <Sparkles className="w-4 h-4 text-[#4F7CFF] animate-spin-slow" />
-              <span>{isMl ? 'മറുപടി തയ്യാറാക്കുന്നു...' : 'Preparing a practice reply...'}</span>
+              <h2 className="text-sm font-extrabold text-white mt-0.5">
+                {isMl ? selectedScenario.titleMl : selectedScenario.titleEn} · {selectedScenario.partnerRoleEn}
+              </h2>
             </div>
-          )}
+          </div>
 
-          <div ref={messagesEndRef} />
+          <div className="flex items-center gap-3">
+            <div className="px-3 py-1.5 rounded-full bg-white/10 border border-white/10 text-xs font-mono tabular-nums text-slate-300">
+              {formatTime(callDuration)}
+            </div>
+            
+            <button
+              onClick={handleEndCall}
+              disabled={userSpokenTurnsCount === 0}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm ${
+                userSpokenTurnsCount > 0
+                  ? 'bg-red-500 hover:bg-red-600 text-white active:scale-95'
+                  : 'bg-white/10 text-slate-400 cursor-not-allowed'
+              }`}
+              title="End conversation and see diagnostic feedback"
+            >
+              <PhoneOff className="w-3.5 h-3.5" />
+              <span>{isMl ? 'കോൾ അവസാനിപ്പിക്കുക' : 'End Call'}</span>
+            </button>
+          </div>
         </div>
 
-        {/* Recording error alert */}
-        {recordingError && (
-          <div className="mx-4 mb-2 p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-center justify-between">
+        {/* Center Visualizer: AI Partner Voice Orb & Live Waveform */}
+        <div className="my-6 flex flex-col items-center text-center space-y-4 max-w-lg w-full">
+          {/* Animated Avatar Sphere with Dynamic Pulse Rings */}
+          <div className="relative flex items-center justify-center">
+            {/* Outermost Ripple */}
+            <div className={`absolute w-44 h-44 rounded-full transition-all duration-700 ${
+              isAISpeaking
+                ? 'bg-[#4F7CFF]/20 scale-125 animate-pulse'
+                : isRecording
+                ? 'bg-red-500/25 scale-125 animate-ping'
+                : 'bg-white/5 scale-100'
+            }`} />
+
+            {/* Middle Ripple */}
+            <div className={`absolute w-36 h-36 rounded-full transition-all duration-500 ${
+              isAISpeaking
+                ? 'bg-[#8055E8]/30 scale-110'
+                : isRecording
+                ? 'bg-red-500/35 scale-110'
+                : 'bg-white/10 scale-100'
+            }`} />
+
+            {/* Core Avatar Button */}
+            <div className={`relative w-28 h-28 rounded-full flex items-center justify-center text-white text-4xl shadow-2xl transition-all duration-300 ${
+              isAISpeaking
+                ? 'bg-gradient-to-tr from-[#4F7CFF] via-[#8055E8] to-[#37D6A0] scale-105 ring-4 ring-white/40'
+                : isRecording
+                ? 'bg-gradient-to-tr from-red-600 to-amber-600 scale-105 ring-4 ring-red-400'
+                : 'bg-gradient-to-tr from-slate-800 to-slate-700 ring-2 ring-white/20'
+            }`}>
+              <span>{selectedScenario.emoji}</span>
+            </div>
+          </div>
+
+          {/* Voice State Badge */}
+          <div className="pt-2">
+            {isAISpeaking ? (
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/20 border border-blue-400/40 text-[#4F7CFF] text-xs font-bold animate-pulse">
+                <Volume2 className="w-3.5 h-3.5" />
+                <span>{selectedScenario.partnerRoleEn} is speaking...</span>
+              </div>
+            ) : isRecording ? (
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-500/20 border border-red-400/40 text-red-400 text-xs font-bold animate-pulse">
+                <Mic className="w-3.5 h-3.5" />
+                <span>{isMl ? 'കേൾക്കുന്നു... ഇംഗ്ലീഷിൽ സംസാരിക്കൂ...' : 'Listening to you... Speak in English'}</span>
+              </div>
+            ) : (
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-400 text-xs font-bold">
+                <Radio className="w-3.5 h-3.5" />
+                <span>{isMl ? 'നിങ്ങളുടെ ഊഴം: മൈക്കിൽ തൊട്ട് സംസാരിക്കൂ' : 'Your Turn: Tap the microphone to talk'}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Live Closed Caption / Spoken Sentence */}
+          <div className="w-full bg-white/5 backdrop-blur-md rounded-2xl p-5 border border-white/10 space-y-3 shadow-inner">
+            <div className="flex items-start justify-between gap-3">
+              <p className="text-base sm:text-lg font-bold text-white leading-relaxed text-left">
+                "{currentAIReply.text}"
+              </p>
+              <button
+                onClick={handleReplayAI}
+                className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center shrink-0 transition-transform active:scale-90"
+                title="Hear sentence again / വീണ്ടും കേൾക്കാം"
+              >
+                <Volume2 className={`w-4 h-4 ${isAISpeaking ? 'text-[#37D6A0] animate-pulse' : ''}`} />
+              </button>
+            </div>
+
+            {/* Malayalam Translation Card */}
+            {showMalayalamExplanation && currentAIReply.malayalam && (
+              <div className="pt-2 border-t border-white/10 text-left font-malayalam">
+                <p className="text-xs text-slate-300 leading-relaxed bg-white/5 p-2.5 rounded-xl border border-white/5">
+                  <span className="text-amber-400 font-bold mr-1.5">മലയാള അർത്ഥം:</span>
+                  {currentAIReply.malayalam}
+                </p>
+              </div>
+            )}
+
+            {/* Live user speech caption preview when recording */}
+            {liveTranscript && (
+              <div className="pt-2 border-t border-red-500/30 text-left animate-pop">
+                <span className="text-[10px] font-bold text-red-400 uppercase tracking-wider block">
+                  You are saying:
+                </span>
+                <p className="text-sm text-red-200 font-semibold italic mt-0.5">
+                  "{liveTranscript}"
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Beginner Spoken Prompt Suggestions ("Say this" cards) */}
+          <div className="w-full text-left space-y-1.5">
+            <div className="flex items-center justify-between text-xs text-slate-400">
+              <span className="font-bold font-malayalam text-[11px] text-slate-300">
+                {isMl ? 'നിങ്ങൾക്ക് പറയാവുന്ന മറുപടികൾ (Tap to speak):' : 'Suggested phrases you can say:'}
+              </span>
+              <button
+                onClick={() => setShowMalayalamExplanation(!showMalayalamExplanation)}
+                className="text-[11px] text-[#4F7CFF] hover:underline flex items-center gap-1"
+              >
+                <Languages className="w-3 h-3" />
+                <span>{showMalayalamExplanation ? 'Hide Malayalam' : 'Show Malayalam'}</span>
+              </button>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-2">
+              {currentAIReply.suggestions.slice(0, 3).map((suggestion, sIdx) => (
+                <button
+                  key={sIdx}
+                  onClick={() => handleSelectSuggestedReply(suggestion)}
+                  className="flex-1 p-2.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 hover:border-[#4F7CFF] text-left text-xs font-semibold text-white/90 hover:text-white transition-all active:scale-95"
+                >
+                  <span className="text-[#37D6A0] text-[10px] uppercase font-bold block mb-0.5">
+                    Say this 🗣️
+                  </span>
+                  "{suggestion}"
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Error notification */}
+        {micError && (
+          <div className="w-full max-w-lg p-3 rounded-2xl bg-amber-500/20 border border-amber-400/30 text-amber-200 text-xs flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
-              <span>{recordingError}</span>
+              <AlertCircle className="w-4 h-4 shrink-0 text-amber-400" />
+              <span>{micError}</span>
             </div>
             <button
-              onClick={() => setRecordingError(null)}
-              className="font-bold text-amber-800 text-xs ml-2 hover:underline"
+              onClick={() => setMicError(null)}
+              className="text-xs font-bold text-white underline ml-2"
             >
               OK
             </button>
           </div>
         )}
 
-        {/* Input Bar */}
-        <div className="p-4 bg-slate-50 border-t border-slate-200">
-          <div className="flex items-center gap-2 max-w-4xl mx-auto">
-            {/* Microphone Button */}
-            <button
-              onClick={handleToggleRecord}
-              className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all shrink-0 active:scale-90 shadow-md ${
-                isRecording
-                  ? 'bg-red-500 text-white animate-pulse ring-4 ring-red-200'
-                  : 'bg-[#4F7CFF] hover:bg-[#3E6DE8] text-white'
-              }`}
-              title={isRecording ? 'Stop listening' : 'Start microphone speech'}
-            >
-              {isRecording ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
-            </button>
+        {/* Bottom Voice Call Action Deck */}
+        <div className="w-full max-w-md pt-4 flex flex-col items-center space-y-3">
+          {/* Main Push-To-Talk Microphone Circle */}
+          <button
+            onClick={handleToggleMic}
+            className={`w-20 h-20 rounded-full flex items-center justify-center transition-all duration-300 shadow-2xl active:scale-90 ${
+              isRecording
+                ? 'bg-red-500 text-white ring-8 ring-red-500/40 animate-pulse scale-110'
+                : 'bg-gradient-to-tr from-[#4F7CFF] to-[#8055E8] hover:from-[#3E6DE8] hover:to-[#6E42E5] text-white ring-4 ring-white/20 hover:scale-105'
+            }`}
+            title={isRecording ? 'Tap to finish speaking' : 'Tap to speak'}
+          >
+            {isRecording ? <MicOff className="w-9 h-9" /> : <Mic className="w-9 h-9" />}
+          </button>
 
-            {/* Text Input Fallback */}
-            <input
-              type="text"
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleSendMessage();
-              }}
-              placeholder={
-                isRecording
-                  ? (isMl ? 'കേൾക്കുന്നു... സംസാരിക്കൂ...' : 'Listening... speak clearly...')
-                  : (isMl ? 'മൈക്കിലൂടെ സംസാരിക്കുക അല്ലെങ്കിൽ ഇവിടെ ടൈപ്പ് ചെയ്യുക...' : 'Speak into mic or type your reply...')
-              }
-              className="flex-1 px-4 py-3 rounded-2xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#4F7CFF] bg-white text-slate-900 text-sm font-medium shadow-inner"
-            />
-
-            {/* Send Button */}
-            <button
-              onClick={() => handleSendMessage()}
-              disabled={!inputText.trim() || isLoadingAI}
-              className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all shrink-0 shadow-md ${
-                inputText.trim() && !isLoadingAI
-                  ? 'bg-slate-900 text-white hover:bg-slate-800 active:scale-95'
-                  : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-              }`}
-            >
-              <Send className="w-5 h-5" />
-            </button>
-          </div>
-
-          <div className="flex items-center justify-between text-[11px] text-slate-400 mt-2 px-1">
-            <span>
-              {isRecording
-                ? (isMl ? '🔴 മൈക്ക് ഓണാണ് (സംസാരിച്ചു കഴിഞ്ഞാൽ തനിയെ തിരിച്ചറിയും)' : '🔴 Recording active (Listening to your speech)')
-                : (isMl ? 'മൈക്ക് ലഭ്യമല്ലെങ്കിൽ ടൈപ്പ് ചെയ്യാം' : 'Microphone & keyboard supported')}
+          <div className="text-center">
+            <span className="text-xs font-bold tracking-wide uppercase text-white block">
+              {isRecording 
+                ? (isMl ? 'സംസാരിച്ച് കഴിഞ്ഞാൽ വീണ്ടും അമർത്തുക' : 'Tap to Send Your Speech')
+                : (isMl ? 'സംസാരിക്കാൻ മൈക്കിൽ തൊടുക' : 'Tap to Speak English')}
             </span>
-            <span className="font-malayalam">
-              {isMl ? 'പരിശീലനത്തിന് ശേഷം ഫലം കാണാം' : 'View your practice feedback anytime'}
+            <span className="text-[11px] text-slate-400 font-malayalam block mt-0.5">
+              {userSpokenTurnsCount} {isMl ? 'തവണ സംസാരിച്ചു' : 'spoken turns in this call'}
             </span>
           </div>
         </div>
+
+        {/* Ambient background glows */}
+        <div className="absolute -top-32 -left-32 w-80 h-80 bg-[#4F7CFF]/15 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-32 -right-32 w-80 h-80 bg-[#8055E8]/15 rounded-full blur-3xl pointer-events-none" />
       </div>
 
       {/* Diagnostic Feedback Modal */}
       {feedbackReport && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-3xl shadow-2xl max-w-xl w-full max-h-[90vh] overflow-y-auto border border-slate-100 p-6 sm:p-8 space-y-6 animate-pop">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-xl w-full max-h-[90vh] overflow-y-auto border border-slate-100 p-6 sm:p-8 space-y-6 animate-pop text-slate-900">
             {/* Header */}
             <div className="flex items-center justify-between border-b border-slate-100 pb-4">
               <div>
                 <span className="text-xs font-bold text-[#37D6A0] uppercase tracking-wider bg-emerald-50 px-2.5 py-1 rounded-lg">
-                  {isMl ? 'സംസാര മൂല്യനിർണ്ണയം' : 'Speaking Diagnostic Report'}
+                  {isMl ? 'സംസാര പരിശീലന ഫലം' : 'Voice Call Feedback Report'}
                 </span>
                 <h2 className="text-xl font-black text-slate-900 mt-1">
                   {selectedScenario.titleEn}
@@ -542,13 +662,12 @@ export const SpeakingArena: React.FC<SpeakingArenaProps> = ({
               </div>
             </div>
 
-            {/* Transcription disclaimer notice as requested in prompt */}
+            {/* Disclaimer notice */}
             <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-start gap-2.5">
               <Info className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
               <p>
                 <strong>{isMl ? 'ശ്രദ്ധിക്കുക:' : 'Notice:'}</strong>{' '}
-                {feedbackReport.transcriptionNote ||
-                  'This evaluation is based on text transcription from your speech. Keep practicing speaking clearly with natural pauses.'}
+                {feedbackReport.transcriptionNote}
               </p>
             </div>
 
@@ -557,7 +676,7 @@ export const SpeakingArena: React.FC<SpeakingArenaProps> = ({
               <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
                 <div className="font-bold text-slate-900 flex items-center gap-1.5">
                   <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                  <span>Grammar Feedback:</span>
+                  <span>Grammar Guidance:</span>
                 </div>
                 <p className="text-slate-600 pl-5">{feedbackReport.grammarFeedback}</p>
               </div>
@@ -581,7 +700,7 @@ export const SpeakingArena: React.FC<SpeakingArenaProps> = ({
               <div className="p-4 rounded-2xl bg-purple-50 border border-purple-200 space-y-1">
                 <div className="font-bold text-purple-900 flex items-center gap-1.5">
                   <Award className="w-4 h-4 text-[#8055E8]" />
-                  <span>Fluency Advice:</span>
+                  <span>Fluency Practice Tip:</span>
                 </div>
                 <p className="text-purple-950 pl-5">{feedbackReport.fluencyTip}</p>
               </div>
@@ -594,7 +713,7 @@ export const SpeakingArena: React.FC<SpeakingArenaProps> = ({
                 <p className="text-emerald-950 leading-relaxed">{feedbackReport.malayalamSummary}</p>
               </div>
 
-              {/* Suggested Practice Sentences with Audio */}
+              {/* Practice Sentences with Audio */}
               {feedbackReport.suggestedPractice && feedbackReport.suggestedPractice.length > 0 && (
                 <div className="space-y-2 pt-1">
                   <span className="font-bold text-slate-900 text-xs block">
@@ -607,8 +726,8 @@ export const SpeakingArena: React.FC<SpeakingArenaProps> = ({
                     >
                       <span className="font-medium text-slate-800">"{sentence}"</span>
                       <button
-                        onClick={() => handlePlayAudio(sentence, `practice_${sIdx}`)}
-                        className="w-7 h-7 rounded-lg bg-white border border-slate-200 text-[#4F7CFF] flex items-center justify-center shrink-0"
+                        onClick={() => speakText(sentence, 'en-US')}
+                        className="w-7 h-7 rounded-lg bg-white border border-slate-200 text-[#4F7CFF] flex items-center justify-center shrink-0 hover:bg-blue-50"
                       >
                         <Volume2 className="w-3.5 h-3.5" />
                       </button>
@@ -619,10 +738,13 @@ export const SpeakingArena: React.FC<SpeakingArenaProps> = ({
             </div>
 
             <button
-              onClick={() => setFeedbackReport(null)}
-              className="w-full py-3.5 rounded-xl bg-[#4F7CFF] hover:bg-[#3E6DE8] text-white font-bold text-sm shadow-md"
+              onClick={() => {
+                setFeedbackReport(null);
+                setIsCallActive(true);
+              }}
+              className="w-full py-3.5 rounded-xl bg-[#4F7CFF] hover:bg-[#3E6DE8] text-white font-bold text-sm shadow-md active:scale-95 transition-all"
             >
-              {isMl ? 'പരിശീലനത്തിലേക്ക് മടങ്ങുക' : 'Done & Return to Arena'}
+              {isMl ? 'പുതിയ സംഭാഷണം തുടങ്ങുക' : 'Start Another Conversation'}
             </button>
           </div>
         </div>

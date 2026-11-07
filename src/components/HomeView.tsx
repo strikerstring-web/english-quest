@@ -78,10 +78,18 @@ export const HomeView: React.FC<HomeViewProps> = ({
             <div className="pt-2 flex flex-wrap gap-3">
               <button
                 onClick={() => onNavigate('speaking')}
-                className="px-4 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-sm flex items-center gap-2 backdrop-blur-md transition-all active:scale-95"
+                className="px-5 py-3 rounded-xl bg-gradient-to-r from-[#4F7CFF] to-[#8055E8] hover:opacity-95 text-white font-bold text-sm flex items-center gap-2 shadow-lg shadow-[#4F7CFF]/25 active:scale-95 transition-all"
               >
                 <Mic className="w-4 h-4 text-[#37D6A0]" />
-                <span>{isMl ? 'സംസാരിച്ചു നോക്കൂ' : 'AI Speaking Arena'}</span>
+                <span>{isMl ? 'തത്സമയം സംസാരിക്കാം (Voice Call)' : 'Start Voice Conversation'}</span>
+              </button>
+
+              <button
+                onClick={() => onNavigate('writing')}
+                className="px-4 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-sm flex items-center gap-2 backdrop-blur-md transition-all active:scale-95"
+              >
+                <PenTool className="w-4 h-4 text-purple-300" />
+                <span>{isMl ? 'എഴുത്തു സ്റ്റുഡിയോ' : 'Writing Studio'}</span>
               </button>
             </div>
           </div>
@@ -326,6 +334,30 @@ export const HomeView: React.FC<HomeViewProps> = ({
           <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-white/10 rounded-full blur-xl pointer-events-none" />
         </div>
 
+        {/* Direct Voice Call Banner */}
+        <div 
+          onClick={() => onNavigate('speaking')}
+          className="p-6 rounded-3xl bg-gradient-to-br from-purple-600 to-slate-900 text-white shadow-lg cursor-pointer group hover:scale-[1.01] transition-transform relative overflow-hidden"
+        >
+          <div className="relative z-10 space-y-2">
+            <span className="inline-block px-2.5 py-1 rounded-lg bg-white/20 text-xs font-bold uppercase tracking-wider backdrop-blur-md">
+              {isMl ? 'തത്സമയ വോയ്‌സ് കോൾ' : 'Direct Voice Call'}
+            </span>
+            <h3 className="text-xl font-black">
+              {isMl ? 'ഇംഗ്ലീഷ് വോയ്‌സ് കോൾ പരിശീലനം' : 'Live English Voice Conversation'}
+            </h3>
+            <p className="text-white/80 text-xs font-malayalam max-w-sm">
+              {isMl
+                ? 'ടെക്സ്റ്റ് ടൈപ്പിംഗ് ഇല്ലാതെ തത്സമയ ശബ്ദ സംഭാഷണത്തിലൂടെ ഇംഗ്ലീഷ് സംസാരിക്കാം'
+                : 'Pure speech-to-speech voice call with live subtitle captions & Malayalam guidance.'}
+            </p>
+            <div className="pt-2 flex items-center gap-1.5 text-xs font-extrabold text-white group-hover:translate-x-1 transition-transform">
+              <span>{isMl ? 'സംസാരിച്ചു തുടങ്ങാം' : 'Start Voice Call'}</span>
+              <ArrowRight className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-white/10 rounded-full blur-xl pointer-events-none" />
+        </div>
       </div>
     </div>
   );

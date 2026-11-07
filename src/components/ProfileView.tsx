@@ -69,7 +69,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     if (b.id === 'grammar_guru' && progress.completedLessons.filter((l) => l.startsWith('grammar_')).length >= 3) unlocked = true;
     if (b.id === 'speaker_bronze' && progress.speakingHistory.length >= 1) unlocked = true;
     if (b.id === 'writer_ace' && progress.writingHistory.some((w) => w.score >= 80)) unlocked = true;
-    if (b.id === 'stage_1_done' && (progress.stageMastery[1] || 0) >= 70) unlocked = true;
+    if (b.id === 'voice_master' && progress.speakingHistory.length >= 3) unlocked = true;
     if (b.id === 'streak_3' && progress.streak >= 3) unlocked = true;
     if (b.id === 'bilingual_bridge' && progress.xp >= 250) unlocked = true;
     return { ...b, unlocked };
